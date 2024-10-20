@@ -113,14 +113,6 @@ func WithStop(stop []string) completionOption {
 	}
 }
 
-func WithStream(stream bool) completionOption {
-	return func(oR *openaiRequest) error {
-		oR.Stream = &stream
-
-		return nil
-	}
-}
-
 func WithTemperature(temperature float64) completionOption {
 	return func(oR *openaiRequest) error {
 		if temperature < 0.0 || temperature > 2.0 {

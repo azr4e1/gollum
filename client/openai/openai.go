@@ -17,6 +17,7 @@ const (
 type openaiRequest struct {
 	Model               string      `json:"model"`
 	Messages            []message   `json:"messages"`
+	Stream              bool        `json:"stream"`
 	FreqPenalty         *float64    `json:"frequency_penalty,omitempty"`
 	LogitBias           map[int]int `json:"logit_bias,omitempty"`
 	LogProbs            *bool       `json:"logprobs,omitempty"`
@@ -26,7 +27,6 @@ type openaiRequest struct {
 	PresencePenalty     *float64    `json:"presence_penalty,omitempty"`
 	Seed                *int        `json:"seed,omitempty"`
 	Stop                []string    `json:"stop,omitempty"`
-	Stream              *bool       `json:"stream,omitempty"`
 	Temperature         *float64    `json:"temperature,omitempty"`
 	TopP                *float64    `json:"top_p,omitempty"`
 	User                string      `json:"user,omitempty"`
@@ -62,6 +62,7 @@ type openaiError struct {
 
 type openaiClient struct {
 	apiKey string
+	// add streaming channel?
 }
 
 func NewOpenaiClient(apiKey string) (openaiClient, error) {
@@ -78,22 +79,36 @@ func (oc openaiClient) Complete(options ...completionOption) (openaiRequest, ope
 		return openaiRequest{}, openaiResponse{}, err
 	}
 
-	jsonRequest, err := json.Marshal(request)
+	res, err := makeHTTPRequest(request, oc)
+	if err != nil {
+		return openaiRequest{}, openaiResponse{}, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return openaiRequest{}, openaiResponse{}, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, COMPLETIONURL, bytes.NewReader(jsonRequest))
+	openaiRes := new(openaiResponse)
+	json.Unmarshal(body, openaiRes)
+
+	// attach status code to response object
+	openaiRes.StatusCode = res.StatusCode
+
+	return *request, *openaiRes, nil
+}
+
+func (oc openaiClient) StreamComplete(options ...completionOption) (openaiRequest, openaiResponse, error) {
+
+	request, err := NewOpenaiRequest(options...)
+
 	if err != nil {
 		return openaiRequest{}, openaiResponse{}, err
 	}
+	request.Stream = true
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
-
-	client := http.Client{Timeout: time.Duration(30 * time.Second)}
-	res, err := client.Do(req)
-
+	res, err := makeHTTPRequest(request, oc)
 	if err != nil {
 		return openaiRequest{}, openaiResponse{}, err
 	}
@@ -131,4 +146,24 @@ func NewOpenaiRequest(options ...completionOption) (*openaiRequest, error) {
 	}
 
 	return request, nil
+}
+
+func makeHTTPRequest(request *openaiRequest, oc openaiClient) (*http.Response, error) {
+	jsonRequest, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, COMPLETIONURL, bytes.NewReader(jsonRequest))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
+
+	client := http.Client{Timeout: time.Duration(30 * time.Second)}
+	res, err := client.Do(req)
+
+	return res, err
 }
