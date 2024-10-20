@@ -3,6 +3,7 @@ package openai
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,12 +11,25 @@ import (
 )
 
 const (
-	BASEURL = "https://api.openai.com/v1/chat/completions"
+	COMPLETIONURL = "https://api.openai.com/v1/chat/completions"
 )
 
 type openaiRequest struct {
-	Model    string    `json:"model"`
-	Messages []message `json:"messages"`
+	Model               string      `json:"model"`
+	Messages            []message   `json:"messages"`
+	FreqPenalty         *float64    `json:"frequency_penalty,omitempty"`
+	LogitBias           map[int]int `json:"logit_bias,omitempty"`
+	LogProbs            *bool       `json:"logprobs,omitempty"`
+	TopLogProbs         *int        `json:"top_logprobs,omitempty"`
+	MaxCompletionTokens *int        `json:"max_completion_tokens,omitempty"`
+	CompletionChoices   *int        `json:"n,omitempty"`
+	PresencePenalty     *float64    `json:"presence_penalty,omitempty"`
+	Seed                *int        `json:"seed,omitempty"`
+	Stop                []string    `json:"stop,omitempty"`
+	Stream              *bool       `json:"stream,omitempty"`
+	Temperature         *float64    `json:"temperature,omitempty"`
+	TopP                *float64    `json:"top_p,omitempty"`
+	User                string      `json:"user,omitempty"`
 }
 
 type openaiResponse struct {
@@ -50,15 +64,18 @@ type openaiClient struct {
 	apiKey string
 }
 
-func NewOpenaiClient(apiKey string) openaiClient {
-	return openaiClient{apiKey: apiKey}
+func NewOpenaiClient(apiKey string) (openaiClient, error) {
+	if apiKey == "" {
+		return openaiClient{}, errors.New("Missing OpenAI API key.")
+	}
+	return openaiClient{apiKey: apiKey}, nil
 }
 
-func (oc openaiClient) Complete(model string, chat llmChat) (openaiRequest, openaiResponse, error) {
+func (oc openaiClient) Complete(options ...completionOption) (openaiRequest, openaiResponse, error) {
 
-	request := openaiRequest{
-		Model:    model,
-		Messages: chat.GetHistory(),
+	request, err := NewOpenaiRequest(options...)
+	if err != nil {
+		return openaiRequest{}, openaiResponse{}, err
 	}
 
 	jsonRequest, err := json.Marshal(request)
@@ -66,7 +83,7 @@ func (oc openaiClient) Complete(model string, chat llmChat) (openaiRequest, open
 		return openaiRequest{}, openaiResponse{}, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, BASEURL, bytes.NewReader(jsonRequest))
+	req, err := http.NewRequest(http.MethodPost, COMPLETIONURL, bytes.NewReader(jsonRequest))
 	if err != nil {
 		return openaiRequest{}, openaiResponse{}, err
 	}
@@ -80,6 +97,7 @@ func (oc openaiClient) Complete(model string, chat llmChat) (openaiRequest, open
 	if err != nil {
 		return openaiRequest{}, openaiResponse{}, err
 	}
+	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -92,5 +110,25 @@ func (oc openaiClient) Complete(model string, chat llmChat) (openaiRequest, open
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
 
-	return request, *openaiRes, nil
+	return *request, *openaiRes, nil
+}
+
+func NewOpenaiRequest(options ...completionOption) (*openaiRequest, error) {
+	request := new(openaiRequest)
+
+	for _, o := range options {
+		err := o(request)
+		if err != nil {
+			return &openaiRequest{}, err
+		}
+	}
+
+	if request.Model == "" {
+		return &openaiRequest{}, errors.New("Missing model name.")
+	}
+	if m := request.Messages; m == nil || len(m) == 0 {
+		return &openaiRequest{}, errors.New("Missing messages to send.")
+	}
+
+	return request, nil
 }

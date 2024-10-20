@@ -5,19 +5,19 @@ type message struct {
 	Content string `json:"content"`
 }
 
-type llmChat struct {
+type openaiChat struct {
 	messages []message
 }
 
-func NewChat(m ...message) llmChat {
-	return llmChat{messages: m}
+func NewChat(m ...message) openaiChat {
+	return openaiChat{messages: m}
 }
 
-func (c *llmChat) Add(m ...message) {
+func (c *openaiChat) Add(m ...message) {
 	c.messages = append(c.messages, m...)
 }
 
-func (c *llmChat) GetHistory() []message {
+func (c *openaiChat) GetHistory() []message {
 	if c.messages == nil {
 		return nil
 	}
