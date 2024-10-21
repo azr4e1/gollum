@@ -19,7 +19,7 @@ func (c *openaiChat) Add(m ...message) {
 
 func (c *openaiChat) GetHistory() []message {
 	if c.messages == nil {
-		return nil
+		return []message{}
 	}
 	return c.messages
 }
