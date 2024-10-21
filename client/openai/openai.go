@@ -67,6 +67,24 @@ type openaiResponse struct {
 	StatusCode int            `json:"status_code"`
 }
 
+func (or openaiResponse) GetMessages() []string {
+	if c := or.Choices; c == nil || len(c) == 0 {
+		return []string{}
+	}
+
+	messages := []string{}
+	for _, c := range or.Choices {
+		// check if it's a streaming request
+		if c.Message.Content == "" {
+			messages = append(messages, c.Delta.Content)
+		} else {
+			messages = append(messages, c.Message.Content)
+		}
+	}
+
+	return messages
+}
+
 func (or openaiResponse) IsEOS() bool {
 	return or.Error.Type == streamEnd
 }
