@@ -12,19 +12,19 @@ import (
 )
 
 const (
-	CompletionURL = "https://api.openai.com/v1/chat/completions"
+	completionURL = "https://api.openai.com/v1/chat/completions"
 )
 
 const (
-	StreamEnd  = "data: [DONE]"
-	DataPrefix = "data: "
+	streamEnd  = "data: [DONE]"
+	dataPrefix = "data: "
 )
 
 const (
-	StreamHTTPError     = "http_error_custom"
-	StreamEOF           = "EOF"
-	StreamByteReadError = "byte_read_error_custom"
-	StreamJSONError     = "json_unmarhsal_error_custom"
+	StreamHTTPError     = "custom_http_error"
+	StreamEOF           = "custom_eof_error"
+	StreamByteReadError = "custom_byte_read_error"
+	StreamJSONError     = "custom_json_unmarhsal_error"
 )
 
 type openaiRequest struct {
@@ -169,14 +169,14 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 			continue
 		}
 
-		if string(line) == StreamEnd {
+		if string(line) == streamEnd {
 			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamEOF}}
 			return nil
 		}
 
 		// remove data prefix from response
-		if string(line)[:len(DataPrefix)] == DataPrefix {
-			line = line[len([]byte(DataPrefix)):]
+		if string(line)[:len(dataPrefix)] == dataPrefix {
+			line = line[len([]byte(dataPrefix)):]
 		}
 
 		chunk := new(openaiResponse)
@@ -237,7 +237,7 @@ func makeHTTPRequest(request *openaiRequest, oc openaiClient) (*http.Response, e
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, CompletionURL, bytes.NewReader(jsonRequest))
+	req, err := http.NewRequest(http.MethodPost, completionURL, bytes.NewReader(jsonRequest))
 	if err != nil {
 		return nil, err
 	}
