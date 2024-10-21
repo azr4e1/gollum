@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -11,7 +12,19 @@ import (
 )
 
 const (
-	COMPLETIONURL = "https://api.openai.com/v1/chat/completions"
+	CompletionURL = "https://api.openai.com/v1/chat/completions"
+)
+
+const (
+	StreamEnd  = "data: [DONE]"
+	DataPrefix = "data: "
+)
+
+const (
+	StreamHTTPError     = "http_error_custom"
+	StreamEOF           = "EOF"
+	StreamByteReadError = "byte_read_error_custom"
+	StreamJSONError     = "json_unmarhsal_error_custom"
 )
 
 type openaiRequest struct {
@@ -52,7 +65,8 @@ type openaiUsage struct {
 
 type openaiChoice struct {
 	Index   int     `json:"index"`
-	Message message `json:"message"`
+	Message message `json:"message,omitempty"`
+	Delta   message `json:"delta,omitempty"`
 }
 
 type openaiError struct {
@@ -61,8 +75,8 @@ type openaiError struct {
 }
 
 type openaiClient struct {
-	apiKey string
-	// add streaming channel?
+	apiKey        string
+	streamChannel chan openaiResponse
 }
 
 func NewOpenaiClient(apiKey string) (openaiClient, error) {
@@ -72,60 +86,129 @@ func NewOpenaiClient(apiKey string) (openaiClient, error) {
 	return openaiClient{apiKey: apiKey}, nil
 }
 
-func (oc openaiClient) Complete(options ...completionOption) (openaiRequest, openaiResponse, error) {
-
-	request, err := NewOpenaiRequest(options...)
-	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
+func (oc *openaiClient) DisableStream() {
+	if c := oc.streamChannel; c != nil {
+		close(c)
 	}
-
-	res, err := makeHTTPRequest(request, oc)
-	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
-	}
-
-	openaiRes := new(openaiResponse)
-	json.Unmarshal(body, openaiRes)
-
-	// attach status code to response object
-	openaiRes.StatusCode = res.StatusCode
-
-	return *request, *openaiRes, nil
+	oc.streamChannel = nil
 }
 
-func (oc openaiClient) StreamComplete(options ...completionOption) (openaiRequest, openaiResponse, error) {
+func (oc *openaiClient) EnableStream() chan openaiResponse {
+	c := make(chan openaiResponse)
+	oc.streamChannel = c
 
+	return c
+}
+
+func (oc openaiClient) IsStreaming() bool {
+	return oc.streamChannel == nil
+}
+
+func (oc openaiClient) Complete(options ...completionOption) (openaiRequest, openaiResponse, error) {
 	request, err := NewOpenaiRequest(options...)
-
 	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
+		return *request, openaiResponse{}, err
 	}
-	request.Stream = true
+	if oc.streamChannel != nil {
+		request.Stream = true
+	}
 
 	res, err := makeHTTPRequest(request, oc)
 	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
+		return *request, openaiResponse{}, err
 	}
 	defer res.Body.Close()
 
+	if oc.streamChannel != nil {
+		err = oc.readStreamResponse(res)
+		return *request, openaiResponse{}, err
+	}
+
+	openaiRes, err := oc.readResponse(res)
+	return *request, openaiRes, err
+}
+
+func (oc openaiClient) readResponse(res *http.Response) (openaiResponse, error) {
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return openaiRequest{}, openaiResponse{}, err
+		return openaiResponse{}, err
 	}
 
 	openaiRes := new(openaiResponse)
-	json.Unmarshal(body, openaiRes)
+	err = json.Unmarshal(body, openaiRes)
+	if err != nil {
+		return openaiResponse{}, err
+	}
 
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
 
-	return *request, *openaiRes, nil
+	return *openaiRes, nil
+}
+
+func (oc openaiClient) readStreamResponse(res *http.Response) error {
+
+	reader := bufio.NewReader(res.Body)
+
+	// read response body until end of stream
+	for res.StatusCode == http.StatusOK {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamEOF}}
+				return nil
+			}
+			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamByteReadError}}
+			return err
+		}
+
+		line = bytes.TrimSpace(line)
+		// skip blank lines
+		if len(line) == 0 {
+			continue
+		}
+
+		if string(line) == StreamEnd {
+			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamEOF}}
+			return nil
+		}
+
+		// remove data prefix from response
+		if string(line)[:len(DataPrefix)] == DataPrefix {
+			line = line[len([]byte(DataPrefix)):]
+		}
+
+		chunk := new(openaiResponse)
+		err = json.Unmarshal(line, chunk)
+		if err != nil {
+			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamJSONError}}
+			return err
+		}
+		// attach status code to response object
+		chunk.StatusCode = res.StatusCode
+
+		oc.streamChannel <- *chunk
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamHTTPError}}
+		return err
+	}
+
+	openaiRes := new(openaiResponse)
+	err = json.Unmarshal(body, openaiRes)
+	if err != nil {
+		oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamJSONError}}
+		return err
+	}
+
+	// attach status code to response object
+	openaiRes.StatusCode = res.StatusCode
+	oc.streamChannel <- *openaiRes
+
+	return nil
 }
 
 func NewOpenaiRequest(options ...completionOption) (*openaiRequest, error) {
@@ -154,7 +237,7 @@ func makeHTTPRequest(request *openaiRequest, oc openaiClient) (*http.Response, e
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, COMPLETIONURL, bytes.NewReader(jsonRequest))
+	req, err := http.NewRequest(http.MethodPost, CompletionURL, bytes.NewReader(jsonRequest))
 	if err != nil {
 		return nil, err
 	}
