@@ -21,10 +21,7 @@ const (
 )
 
 const (
-	StreamHTTPError     = "custom_http_error"
-	StreamEOF           = "custom_eof_error"
-	StreamByteReadError = "custom_byte_read_error"
-	StreamJSONError     = "custom_json_unmarhsal_error"
+	EOS = "custom_end_of_stream_error"
 )
 
 type openaiRequest struct {
@@ -45,17 +42,6 @@ type openaiRequest struct {
 	User                string      `json:"user,omitempty"`
 }
 
-type openaiResponse struct {
-	Id         string         `json:"id"`
-	Object     string         `json:"object"`
-	Created    int            `json:"created"`
-	Model      string         `json:"model"`
-	Choices    []openaiChoice `json:"choices"`
-	Usage      openaiUsage    `json:"usage"`
-	Error      openaiError    `json:"error"`
-	StatusCode int            `json:"status_code"`
-}
-
 type openaiUsage struct {
 	PromptTokens            int            `json:"prompt_tokens"`
 	CompletionTokens        int            `json:"completion_tokens"`
@@ -72,6 +58,25 @@ type openaiChoice struct {
 type openaiError struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
+}
+
+type openaiResponse struct {
+	Id         string         `json:"id"`
+	Object     string         `json:"object"`
+	Created    int            `json:"created"`
+	Model      string         `json:"model"`
+	Choices    []openaiChoice `json:"choices"`
+	Usage      openaiUsage    `json:"usage"`
+	Error      openaiError    `json:"error"`
+	StatusCode int            `json:"status_code"`
+}
+
+func (or openaiResponse) IsEOS() bool {
+	return or.Error.Type == EOS
+}
+
+func newEOS(message string) openaiResponse {
+	return openaiResponse{Error: openaiError{Type: EOS, Message: message}}
 }
 
 type openaiClient struct {
@@ -156,10 +161,10 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 		line, err := reader.ReadBytes('\n')
 		if err != nil {
 			if err == io.EOF {
-				oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamEOF}}
+				oc.streamChannel <- newEOS("End of stream.")
 				return nil
 			}
-			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamByteReadError}}
+			oc.streamChannel <- newEOS("Byte read error.")
 			return err
 		}
 
@@ -170,7 +175,7 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 		}
 
 		if string(line) == streamEnd {
-			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamEOF}}
+			oc.streamChannel <- newEOS("End of stream.")
 			return nil
 		}
 
@@ -182,7 +187,7 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 		chunk := new(openaiResponse)
 		err = json.Unmarshal(line, chunk)
 		if err != nil {
-			oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamJSONError}}
+			oc.streamChannel <- newEOS("JSON unmarshalling error.")
 			return err
 		}
 		// attach status code to response object
@@ -193,14 +198,14 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamHTTPError}}
+		oc.streamChannel <- newEOS("Byte read error.")
 		return err
 	}
 
 	openaiRes := new(openaiResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
-		oc.streamChannel <- openaiResponse{Error: openaiError{Type: StreamJSONError}}
+		oc.streamChannel <- newEOS("JSON unmarshalling error.")
 		return err
 	}
 
