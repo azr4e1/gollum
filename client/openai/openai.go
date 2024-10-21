@@ -21,21 +21,21 @@ const (
 )
 
 type openaiRequest struct {
-	Model               string      `json:"model"`
-	Messages            []message   `json:"messages"`
-	Stream              bool        `json:"stream"`
-	FreqPenalty         *float64    `json:"frequency_penalty,omitempty"`
-	LogitBias           map[int]int `json:"logit_bias,omitempty"`
-	LogProbs            *bool       `json:"logprobs,omitempty"`
-	TopLogProbs         *int        `json:"top_logprobs,omitempty"`
-	MaxCompletionTokens *int        `json:"max_completion_tokens,omitempty"`
-	CompletionChoices   *int        `json:"n,omitempty"`
-	PresencePenalty     *float64    `json:"presence_penalty,omitempty"`
-	Seed                *int        `json:"seed,omitempty"`
-	Stop                []string    `json:"stop,omitempty"`
-	Temperature         *float64    `json:"temperature,omitempty"`
-	TopP                *float64    `json:"top_p,omitempty"`
-	User                string      `json:"user,omitempty"`
+	Model               string          `json:"model"`
+	Messages            []openaiMessage `json:"messages"`
+	Stream              bool            `json:"stream"`
+	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
+	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
+	LogProbs            *bool           `json:"logprobs,omitempty"`
+	TopLogProbs         *int            `json:"top_logprobs,omitempty"`
+	MaxCompletionTokens *int            `json:"max_completion_tokens,omitempty"`
+	CompletionChoices   *int            `json:"n,omitempty"`
+	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
+	Seed                *int            `json:"seed,omitempty"`
+	Stop                []string        `json:"stop,omitempty"`
+	Temperature         *float64        `json:"temperature,omitempty"`
+	TopP                *float64        `json:"top_p,omitempty"`
+	User                string          `json:"user,omitempty"`
 }
 
 type openaiUsage struct {
@@ -46,9 +46,9 @@ type openaiUsage struct {
 }
 
 type openaiChoice struct {
-	Index   int     `json:"index"`
-	Message message `json:"message,omitempty"`
-	Delta   message `json:"delta,omitempty"`
+	Index   int           `json:"index"`
+	Message openaiMessage `json:"message,omitempty"`
+	Delta   openaiMessage `json:"delta,omitempty"`
 }
 
 type openaiError struct {

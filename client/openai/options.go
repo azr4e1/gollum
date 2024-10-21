@@ -12,7 +12,7 @@ func WithModel(modelName string) completionOption {
 	}
 }
 
-func WithMessages(messages []message) completionOption {
+func WithMessages(messages []openaiMessage) completionOption {
 	return func(oR *openaiRequest) error {
 		if messages == nil || len(messages) == 0 {
 			return errors.New("Missing messages to send.")
