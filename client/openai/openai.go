@@ -20,10 +20,6 @@ const (
 	dataPrefix = "data: "
 )
 
-const (
-	EOS = "custom_end_of_stream_error"
-)
-
 type openaiRequest struct {
 	Model               string      `json:"model"`
 	Messages            []message   `json:"messages"`
@@ -72,11 +68,11 @@ type openaiResponse struct {
 }
 
 func (or openaiResponse) IsEOS() bool {
-	return or.Error.Type == EOS
+	return or.Error.Type == streamEnd
 }
 
 func newEOS(message string) openaiResponse {
-	return openaiResponse{Error: openaiError{Type: EOS, Message: message}}
+	return openaiResponse{Error: openaiError{Type: streamEnd, Message: message}}
 }
 
 type openaiClient struct {
