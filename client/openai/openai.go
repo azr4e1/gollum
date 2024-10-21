@@ -93,7 +93,7 @@ func (oc *openaiClient) DisableStream() {
 	oc.streamChannel = nil
 }
 
-func (oc *openaiClient) EnableStream() chan openaiResponse {
+func (oc *openaiClient) EnableStream() <-chan openaiResponse {
 	c := make(chan openaiResponse)
 	oc.streamChannel = c
 
