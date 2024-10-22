@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -85,9 +84,6 @@ func makeHTTPCompletionRequest(request *CompletionRequest, oc OllamaClient) (*ht
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.baseURL))
 
 	client := http.Client{Timeout: oc.Timeout}
 	res, err := client.Do(req)
