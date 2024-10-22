@@ -24,6 +24,7 @@ type openaiRequest struct {
 	Model               string          `json:"model"`
 	Messages            []openaiMessage `json:"messages"`
 	Stream              bool            `json:"stream"`
+	Tools               []openaiTool    `json:"tools,omitempty"`
 	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
 	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
 	LogProbs            *bool           `json:"logprobs,omitempty"`
@@ -46,9 +47,10 @@ type openaiUsage struct {
 }
 
 type openaiChoice struct {
-	Index   int           `json:"index"`
-	Message openaiMessage `json:"message,omitempty"`
-	Delta   openaiMessage `json:"delta,omitempty"`
+	Index        int            `json:"index"`
+	Message      *openaiMessage `json:"message,omitempty"`
+	Delta        *openaiMessage `json:"delta,omitempty"`
+	FinishReason string         `json:"finish_reason"`
 }
 
 type openaiError struct {
@@ -75,10 +77,10 @@ func (or openaiResponse) GetMessages() []string {
 	messages := []string{}
 	for _, c := range or.Choices {
 		// check if it's a streaming request
-		if c.Message.Content == "" {
-			messages = append(messages, c.Delta.Content)
-		} else {
+		if c.Message.Content != "" {
 			messages = append(messages, c.Message.Content)
+		} else if c.Delta.Content != "" {
+			messages = append(messages, c.Delta.Content)
 		}
 	}
 

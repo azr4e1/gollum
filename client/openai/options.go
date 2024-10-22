@@ -143,3 +143,11 @@ func WithUser(user string) completionOption {
 		return nil
 	}
 }
+
+func WithTool(tools ...openaiTool) completionOption {
+	return func(oR *openaiRequest) error {
+		oR.Tools = tools
+
+		return nil
+	}
+}
