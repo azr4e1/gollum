@@ -65,7 +65,7 @@ type openaiResponse struct {
 	Model      string         `json:"model"`
 	Choices    []openaiChoice `json:"choices"`
 	Usage      openaiUsage    `json:"usage"`
-	Error      openaiError    `json:"error"`
+	Error      *openaiError   `json:"error,omitempty"`
 	StatusCode int            `json:"status_code"`
 }
 
@@ -92,7 +92,7 @@ func (or openaiResponse) IsEOS() bool {
 }
 
 func newEOS(message string) openaiResponse {
-	return openaiResponse{Error: openaiError{Type: streamEnd, Message: message}}
+	return openaiResponse{Error: &openaiError{Type: streamEnd, Message: message}}
 }
 
 type openaiClient struct {
