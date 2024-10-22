@@ -5,14 +5,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 const (
 	completionURL = "https://api.openai.com/v1/chat/completions"
+	audioURL      = "https://api.openai.com/v1/audio/speech"
 )
 
 const (
@@ -155,44 +154,4 @@ func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 	oc.streamChannel <- *openaiRes
 
 	return nil
-}
-
-func NewCompletionRequest(options ...completionOption) (*completionRequest, error) {
-	request := new(completionRequest)
-
-	for _, o := range options {
-		err := o(request)
-		if err != nil {
-			return &completionRequest{}, err
-		}
-	}
-
-	if request.Model == "" {
-		return &completionRequest{}, errors.New("Missing model name.")
-	}
-	if m := request.Messages; m == nil || len(m) == 0 {
-		return &completionRequest{}, errors.New("Missing messages to send.")
-	}
-
-	return request, nil
-}
-
-func makeHTTPCompletionRequest(request *completionRequest, oc openaiClient) (*http.Response, error) {
-	jsonRequest, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, completionURL, bytes.NewReader(jsonRequest))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
-
-	client := http.Client{Timeout: time.Duration(30 * time.Second)}
-	res, err := client.Do(req)
-
-	return res, err
 }
