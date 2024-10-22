@@ -1,7 +1,7 @@
-package client
+package gollum
 
 import (
-	"github.com/azr4e1/gocast/client/openai"
+	"github.com/azr4e1/gollum/openai"
 )
 
 type llmProvider int
