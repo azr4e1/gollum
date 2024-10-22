@@ -20,87 +20,12 @@ const (
 	dataPrefix = "data: "
 )
 
-type openaiRequest struct {
-	Model               string          `json:"model"`
-	Messages            []openaiMessage `json:"messages"`
-	Stream              bool            `json:"stream"`
-	Tools               []openaiTool    `json:"tools,omitempty"`
-	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
-	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
-	LogProbs            *bool           `json:"logprobs,omitempty"`
-	TopLogProbs         *int            `json:"top_logprobs,omitempty"`
-	MaxCompletionTokens *int            `json:"max_completion_tokens,omitempty"`
-	CompletionChoices   *int            `json:"n,omitempty"`
-	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
-	Seed                *int            `json:"seed,omitempty"`
-	Stop                []string        `json:"stop,omitempty"`
-	Temperature         *float64        `json:"temperature,omitempty"`
-	TopP                *float64        `json:"top_p,omitempty"`
-	User                string          `json:"user,omitempty"`
-}
-
-type openaiUsage struct {
-	PromptTokens            int            `json:"prompt_tokens"`
-	CompletionTokens        int            `json:"completion_tokens"`
-	TotalTokens             int            `json:"total_tokens"`
-	CompletionTokensDetails map[string]any `json:"completion_tokens_details"`
-}
-
-type openaiChoice struct {
-	Index        int            `json:"index"`
-	Message      *openaiMessage `json:"message,omitempty"`
-	Delta        *openaiMessage `json:"delta,omitempty"`
-	FinishReason string         `json:"finish_reason"`
-}
-
-type openaiError struct {
-	Message string `json:"message"`
-	Type    string `json:"type"`
-}
-
-type openaiResponse struct {
-	Id         string         `json:"id"`
-	Object     string         `json:"object"`
-	Created    int            `json:"created"`
-	Model      string         `json:"model"`
-	Choices    []openaiChoice `json:"choices"`
-	Usage      openaiUsage    `json:"usage"`
-	Error      *openaiError   `json:"error,omitempty"`
-	StatusCode int            `json:"status_code"`
-}
-
-func (or openaiResponse) GetMessages() []string {
-	if c := or.Choices; c == nil || len(c) == 0 {
-		return []string{}
-	}
-
-	messages := []string{}
-	for _, c := range or.Choices {
-		// check if it's a streaming request
-		if c.Message.Content != "" {
-			messages = append(messages, c.Message.Content)
-		} else if c.Delta.Content != "" {
-			messages = append(messages, c.Delta.Content)
-		}
-	}
-
-	return messages
-}
-
-func (or openaiResponse) IsEOS() bool {
-	return or.Error.Type == streamEnd
-}
-
-func newEOS(message string) openaiResponse {
-	return openaiResponse{Error: &openaiError{Type: streamEnd, Message: message}}
-}
-
 type openaiClient struct {
 	apiKey        string
-	streamChannel chan openaiResponse
+	streamChannel chan completionResponse
 }
 
-func NewOpenaiClient(apiKey string) (openaiClient, error) {
+func NewClient(apiKey string) (openaiClient, error) {
 	if apiKey == "" {
 		return openaiClient{}, errors.New("Missing OpenAI API key.")
 	}
@@ -114,8 +39,8 @@ func (oc *openaiClient) DisableStream() {
 	oc.streamChannel = nil
 }
 
-func (oc *openaiClient) EnableStream() <-chan openaiResponse {
-	c := make(chan openaiResponse)
+func (oc *openaiClient) EnableStream() <-chan completionResponse {
+	c := make(chan completionResponse)
 	oc.streamChannel = c
 
 	return c
@@ -125,41 +50,41 @@ func (oc openaiClient) IsStreaming() bool {
 	return oc.streamChannel == nil
 }
 
-func (oc openaiClient) Complete(options ...completionOption) (openaiRequest, openaiResponse, error) {
-	request, err := NewOpenaiRequest(options...)
+func (oc openaiClient) Complete(options ...completionOption) (completionRequest, completionResponse, error) {
+	request, err := NewCompletionRequest(options...)
 	if err != nil {
-		return *request, openaiResponse{}, err
+		return *request, completionResponse{}, err
 	}
 	if oc.streamChannel != nil {
 		request.Stream = true
 	}
 
-	res, err := makeHTTPRequest(request, oc)
+	res, err := makeHTTPCompletionRequest(request, oc)
 	if err != nil {
-		return *request, openaiResponse{}, err
+		return *request, completionResponse{}, err
 	}
 	defer res.Body.Close()
 
 	if oc.streamChannel != nil {
-		err = oc.readStreamResponse(res)
-		return *request, openaiResponse{}, err
+		err = oc.readCompletionStreamResponse(res)
+		return *request, completionResponse{}, err
 	}
 
-	openaiRes, err := oc.readResponse(res)
+	openaiRes, err := oc.readCompletionResponse(res)
 	return *request, openaiRes, err
 }
 
-func (oc openaiClient) readResponse(res *http.Response) (openaiResponse, error) {
+func (oc openaiClient) readCompletionResponse(res *http.Response) (completionResponse, error) {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return openaiResponse{}, err
+		return completionResponse{}, err
 	}
 
-	openaiRes := new(openaiResponse)
+	openaiRes := new(completionResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
-		return openaiResponse{}, err
+		return completionResponse{}, err
 	}
 
 	// attach status code to response object
@@ -168,7 +93,7 @@ func (oc openaiClient) readResponse(res *http.Response) (openaiResponse, error) 
 	return *openaiRes, nil
 }
 
-func (oc openaiClient) readStreamResponse(res *http.Response) error {
+func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 
 	reader := bufio.NewReader(res.Body)
 
@@ -200,7 +125,7 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 			line = line[len([]byte(dataPrefix)):]
 		}
 
-		chunk := new(openaiResponse)
+		chunk := new(completionResponse)
 		err = json.Unmarshal(line, chunk)
 		if err != nil {
 			oc.streamChannel <- newEOS("JSON unmarshalling error.")
@@ -218,7 +143,7 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 		return err
 	}
 
-	openaiRes := new(openaiResponse)
+	openaiRes := new(completionResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
 		oc.streamChannel <- newEOS("JSON unmarshalling error.")
@@ -232,27 +157,27 @@ func (oc openaiClient) readStreamResponse(res *http.Response) error {
 	return nil
 }
 
-func NewOpenaiRequest(options ...completionOption) (*openaiRequest, error) {
-	request := new(openaiRequest)
+func NewCompletionRequest(options ...completionOption) (*completionRequest, error) {
+	request := new(completionRequest)
 
 	for _, o := range options {
 		err := o(request)
 		if err != nil {
-			return &openaiRequest{}, err
+			return &completionRequest{}, err
 		}
 	}
 
 	if request.Model == "" {
-		return &openaiRequest{}, errors.New("Missing model name.")
+		return &completionRequest{}, errors.New("Missing model name.")
 	}
 	if m := request.Messages; m == nil || len(m) == 0 {
-		return &openaiRequest{}, errors.New("Missing messages to send.")
+		return &completionRequest{}, errors.New("Missing messages to send.")
 	}
 
 	return request, nil
 }
 
-func makeHTTPRequest(request *openaiRequest, oc openaiClient) (*http.Response, error) {
+func makeHTTPCompletionRequest(request *completionRequest, oc openaiClient) (*http.Response, error) {
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, err

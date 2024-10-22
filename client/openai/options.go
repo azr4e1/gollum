@@ -2,18 +2,18 @@ package openai
 
 import "errors"
 
-type completionOption func(*openaiRequest) error
+type completionOption func(*completionRequest) error
 
 func WithModel(modelName string) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		oR.Model = modelName
 
 		return nil
 	}
 }
 
-func WithMessages(messages []openaiMessage) completionOption {
-	return func(oR *openaiRequest) error {
+func WithMessages(messages []message) completionOption {
+	return func(oR *completionRequest) error {
 		if messages == nil || len(messages) == 0 {
 			return errors.New("Missing messages to send.")
 		}
@@ -24,7 +24,7 @@ func WithMessages(messages []openaiMessage) completionOption {
 }
 
 func WithFreqPenalty(freqPenalty float64) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if freqPenalty < -2.0 || freqPenalty > 2.0 {
 			return errors.New("frequency penalty must be between -2.0 and 2.0.")
 		}
@@ -35,7 +35,7 @@ func WithFreqPenalty(freqPenalty float64) completionOption {
 }
 
 func WithLogitBias(logitBias map[int]int) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if len(logitBias) == 0 {
 			return errors.New("Map cannot be empty.")
 		}
@@ -46,7 +46,7 @@ func WithLogitBias(logitBias map[int]int) completionOption {
 }
 
 func WithLogProbs(logProbs bool) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		oR.LogProbs = &logProbs
 
 		return nil
@@ -54,7 +54,7 @@ func WithLogProbs(logProbs bool) completionOption {
 }
 
 func WithTopLogProbs(topLogProbs int) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if topLogProbs < 0 || topLogProbs > 20 {
 			return errors.New("top_logprobs must be between 0 and 20.")
 		}
@@ -65,7 +65,7 @@ func WithTopLogProbs(topLogProbs int) completionOption {
 }
 
 func WithMaxCompletionTokens(maxCompletionTokens int) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if maxCompletionTokens <= 0 {
 			return errors.New("Max completion tokens cannot be negative or zero.")
 		}
@@ -76,7 +76,7 @@ func WithMaxCompletionTokens(maxCompletionTokens int) completionOption {
 }
 
 func WithCompletionChoices(completionChoices int) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if completionChoices <= 0 {
 			return errors.New("Number of completion choices cannot be negative or zero.")
 		}
@@ -87,7 +87,7 @@ func WithCompletionChoices(completionChoices int) completionOption {
 }
 
 func WithPresencePenalty(presencePenalty float64) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if presencePenalty < -2.0 || presencePenalty > 2.0 {
 			return errors.New("Presence penalty must be between -2.0 and 2.0")
 		}
@@ -98,7 +98,7 @@ func WithPresencePenalty(presencePenalty float64) completionOption {
 }
 
 func WithSeed(seed int) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		oR.Seed = &seed
 
 		return nil
@@ -106,7 +106,7 @@ func WithSeed(seed int) completionOption {
 }
 
 func WithStop(stop []string) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		oR.Stop = stop
 
 		return nil
@@ -114,7 +114,7 @@ func WithStop(stop []string) completionOption {
 }
 
 func WithTemperature(temperature float64) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if temperature < 0.0 || temperature > 2.0 {
 			return errors.New("Temperature must be between 0.0 and 2.0.")
 		}
@@ -124,7 +124,7 @@ func WithTemperature(temperature float64) completionOption {
 	}
 }
 func WithTopP(topP float64) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if topP < 0.0 || topP > 1 {
 			return errors.New("Top P must be between 0 and 1.")
 		}
@@ -134,7 +134,7 @@ func WithTopP(topP float64) completionOption {
 	}
 }
 func WithUser(user string) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		if user == "" {
 			return errors.New("Cannot set user to empty string.")
 		}
@@ -145,7 +145,7 @@ func WithUser(user string) completionOption {
 }
 
 func WithTool(tools ...openaiTool) completionOption {
-	return func(oR *openaiRequest) error {
+	return func(oR *completionRequest) error {
 		oR.Tools = tools
 
 		return nil
