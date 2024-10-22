@@ -4,7 +4,7 @@ import "errors"
 
 type clientOption func(*llmClient) error
 type completionOption func(*CompletionRequest) error
-type speechOption func(*AudioRequest) error
+type speechOption func(*TTSRequest) error
 
 func WithProvider(provider llmProvider) clientOption {
 	return func(lc *llmClient) error {
@@ -175,3 +175,49 @@ func WithUser(user string) completionOption {
 // 		return nil
 // 	}
 // }
+
+func WithTTSModel(model string) speechOption {
+	return func(aR *TTSRequest) error {
+		if model == "" {
+			return errors.New("model is missing")
+		}
+		aR.Model = model
+		return nil
+	}
+}
+func WithTTSInput(input string) speechOption {
+	return func(aR *TTSRequest) error {
+		if input == "" {
+			return errors.New("input is empty.")
+		}
+		aR.Input = input
+		return nil
+	}
+}
+func WithTTSVoice(voice string) speechOption {
+	return func(aR *TTSRequest) error {
+		if voice == "" {
+			return errors.New("voice is missing")
+		}
+		aR.Voice = voice
+		return nil
+	}
+}
+func WithTTSFormat(format string) speechOption {
+	return func(aR *TTSRequest) error {
+		if format == "" {
+			return errors.New("format is missing")
+		}
+		aR.Format = format
+		return nil
+	}
+}
+func WithTTSSpeed(speed float64) speechOption {
+	return func(aR *TTSRequest) error {
+		if speed < 0.25 || speed > 4 {
+			return errors.New("speed must be between 0.25 and 4. Default is 1.")
+		}
+		aR.Speed = &speed
+		return nil
+	}
+}

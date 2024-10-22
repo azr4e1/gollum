@@ -6,7 +6,7 @@ Small library for LLM completion. It provides a single client to interface to mu
 
 - OpenAI:
   - [X] Completion
-  - [X] Audio generation
+  - [X] TTS
   - [ ] Embeddings
 - Ollama:
   - [ ] Completion

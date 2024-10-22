@@ -151,3 +151,40 @@ func WithTool(tools ...openaiTool) completionOption {
 		return nil
 	}
 }
+
+func WithTTSModel(model ttsModel) ttsOption {
+	return func(aR *TTSRequest) error {
+		aR.Model = string(model)
+		return nil
+	}
+}
+func WithTTSInput(input string) ttsOption {
+	return func(aR *TTSRequest) error {
+		if input == "" {
+			return errors.New("input is empty.")
+		}
+		aR.Input = input
+		return nil
+	}
+}
+func WithTTSVoice(voice openaiVoice) ttsOption {
+	return func(aR *TTSRequest) error {
+		aR.Voice = string(voice)
+		return nil
+	}
+}
+func WithTTSFormat(format ttsFormat) ttsOption {
+	return func(aR *TTSRequest) error {
+		aR.Format = string(format)
+		return nil
+	}
+}
+func WithTTSSpeed(speed float64) ttsOption {
+	return func(aR *TTSRequest) error {
+		if speed < 0.25 || speed > 4 {
+			return errors.New("speed must be between 0.25 and 4. Default is 1.")
+		}
+		aR.Speed = &speed
+		return nil
+	}
+}

@@ -155,18 +155,18 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 	return err
 }
 
-func (oc OpenaiClient) Speech(opts ...audioOption) (AudioRequest, AudioResponse, error) {
-	request, err := NewAudioRequest(opts...)
+func (oc OpenaiClient) TextToSpeech(opts ...ttsOption) (TTSRequest, TTSResponse, error) {
+	request, err := NewTTSRequest(opts...)
 	if err != nil {
-		return *request, AudioResponse{}, err
+		return *request, TTSResponse{}, err
 	}
-	return oc.SpeechWithCustomRequest(request)
+	return oc.TTSWithCustomRequest(request)
 }
 
-func (oc OpenaiClient) SpeechWithCustomRequest(request *AudioRequest) (AudioRequest, AudioResponse, error) {
-	response := new(AudioResponse)
+func (oc OpenaiClient) TTSWithCustomRequest(request *TTSRequest) (TTSRequest, TTSResponse, error) {
+	response := new(TTSResponse)
 
-	res, err := makeHTTPAudioRequest(request, oc)
+	res, err := makeHTTPTTSRequest(request, oc)
 	if err != nil {
 		return *request, *response, err
 	}
