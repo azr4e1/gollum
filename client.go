@@ -11,10 +11,14 @@ const (
 	OLLAMA
 )
 
+type StreamingFunction func(CompletionResponse) error
+
 type llmClient struct {
-	provider llmProvider
-	apiKey   string
-	apiBase  string
+	provider       llmProvider
+	apiKey         string
+	apiBase        string
+	stream         bool
+	streamFunction StreamingFunction
 }
 
 func NewClient(options ...clientOption) (llmClient, error) {
@@ -36,6 +40,20 @@ func NewClient(options ...clientOption) (llmClient, error) {
 	return *client, nil
 }
 
+func (oc *llmClient) DisableStream() {
+	oc.stream = false
+	oc.streamFunction = nil
+}
+
+func (oc *llmClient) EnableStream(function StreamingFunction) {
+	oc.stream = true
+	oc.streamFunction = function
+}
+
+func (oc llmClient) IsStreaming() bool {
+	return oc.stream
+}
+
 func (c llmClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
 	request, err := NewCompletionRequest(options...)
 	if err != nil {
@@ -44,17 +62,7 @@ func (c llmClient) Complete(options ...completionOption) (CompletionRequest, Com
 
 	switch c.provider {
 	case OPENAI:
-		openaiReq := request.ToOpenAI()
-		openaiClient, err := c.ToOpenAI()
-		if err != nil {
-			return *request, CompletionResponse{}, err
-		}
-		_, result, err := openaiClient.CompleteWithCustomRequest(&openaiReq)
-		if err != nil {
-			return *request, CompletionResponse{}, err
-		}
-
-		return *request, ResponseFromOpenAI(result), nil
+		return openaiComplete(request, c)
 	}
 
 	return *request, CompletionResponse{}, nil

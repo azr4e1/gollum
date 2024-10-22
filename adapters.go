@@ -87,3 +87,24 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 
 	return converted
 }
+
+func openaiComplete(request *CompletionRequest, c llmClient) (CompletionRequest, CompletionResponse, error) {
+	openaiReq := request.ToOpenAI()
+	openaiClient, err := c.ToOpenAI()
+	if err != nil {
+		return *request, CompletionResponse{}, err
+	}
+	if c.stream {
+		streamFunc := func(openaiRes oai.CompletionResponse) error {
+			res := ResponseFromOpenAI(openaiRes)
+			return c.streamFunction(res)
+		}
+		openaiClient.EnableStream(streamFunc)
+	}
+	_, result, err := openaiClient.CompleteWithCustomRequest(&openaiReq)
+	if err != nil {
+		return *request, CompletionResponse{}, err
+	}
+
+	return *request, ResponseFromOpenAI(result), nil
+}

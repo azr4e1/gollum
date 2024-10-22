@@ -2,6 +2,8 @@ package gollum
 
 import "errors"
 
+const streamEnd = "gollum_end_of_stream"
+
 type CompletionRequest struct {
 	Model               string
 	Messages            []Message
@@ -49,6 +51,28 @@ type CompletionResponse struct {
 	Usage      CompletionUsage
 	Error      *CompletionError
 	StatusCode int
+}
+
+func (or CompletionResponse) GetMessages() []string {
+	if c := or.Choices; c == nil || len(c) == 0 {
+		return []string{}
+	}
+
+	messages := []string{}
+	for _, c := range or.Choices {
+		// check if it's a streaming request
+		if c.Message != nil && c.Message.Content != "" {
+			messages = append(messages, c.Message.Content)
+		} else if c.Delta != nil && c.Delta.Content != "" {
+			messages = append(messages, c.Delta.Content)
+		}
+	}
+
+	return messages
+}
+
+func newEOS(message string) CompletionResponse {
+	return CompletionResponse{Error: &CompletionError{Type: streamEnd, Message: message}}
 }
 
 func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
