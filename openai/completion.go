@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 type CompletionRequest struct {
@@ -110,7 +109,7 @@ func makeHTTPCompletionRequest(request *CompletionRequest, oc OpenaiClient) (*ht
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
 
-	client := http.Client{Timeout: time.Duration(30 * time.Second)}
+	client := http.Client{Timeout: oc.Timeout}
 	res, err := client.Do(req)
 
 	return res, err

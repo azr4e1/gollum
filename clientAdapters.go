@@ -9,6 +9,7 @@ func (c llmClient) ToOpenAI() (oai.OpenaiClient, error) {
 	if err != nil {
 		return oai.OpenaiClient{}, err
 	}
+	client.Timeout = c.Timeout
 
 	return client, nil
 }

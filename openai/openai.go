@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 )
 
 const (
@@ -25,13 +26,14 @@ type OpenaiClient struct {
 	apiKey         string
 	stream         bool
 	streamFunction StreamingFunction
+	Timeout        time.Duration
 }
 
 func NewClient(apiKey string) (OpenaiClient, error) {
 	if apiKey == "" {
 		return OpenaiClient{}, errors.New("Missing OpenAI API key.")
 	}
-	return OpenaiClient{apiKey: apiKey}, nil
+	return OpenaiClient{apiKey: apiKey, Timeout: 30 * time.Second}, nil
 }
 
 func (oc *OpenaiClient) DisableStream() {

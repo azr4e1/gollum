@@ -2,6 +2,7 @@ package gollum
 
 import (
 	"errors"
+	"time"
 )
 
 type llmProvider int
@@ -19,10 +20,12 @@ type llmClient struct {
 	apiBase        string
 	stream         bool
 	streamFunction StreamingFunction
+	Timeout        time.Duration
 }
 
 func NewClient(options ...clientOption) (llmClient, error) {
 	client := new(llmClient)
+	client.Timeout = 30 * time.Second
 	for _, o := range options {
 		err := o(client)
 		if err != nil {
