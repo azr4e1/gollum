@@ -45,6 +45,17 @@ type audioRequest struct {
 	Speed  *float64    `json:"speed,omitempty"`
 }
 
+type audioResponse struct {
+	Audio      []byte      `json:"audio"`
+	Error      *audioError `json:"error,omitempty"`
+	StatusCode int         `json:"status_code"`
+}
+
+type audioError struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+
 func WithAudioModel(model audioModel) audioOption {
 	return func(aR *audioRequest) error {
 		aR.Model = model

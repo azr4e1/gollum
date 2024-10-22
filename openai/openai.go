@@ -156,22 +156,36 @@ func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 	return nil
 }
 
-func (oc openaiClient) Audio(opts ...audioOption) (audioRequest, []byte, error) {
+func (oc openaiClient) Speech(opts ...audioOption) (audioRequest, audioResponse, error) {
 	request, err := NewAudioRequest(opts...)
+	response := new(audioResponse)
 	if err != nil {
-		return *request, nil, err
+		return *request, *response, err
 	}
 
 	res, err := makeHTTPAudioRequest(request, oc)
 	if err != nil {
-		return *request, nil, err
+		return *request, *response, err
 	}
 	defer res.Body.Close()
 
-	audio, err := io.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return *request, nil, err
+		return *request, *response, err
 	}
 
-	return *request, audio, nil
+	// check the return status
+	if res.StatusCode != http.StatusOK {
+		err := json.Unmarshal(body, response)
+		if err != nil {
+			return *request, *response, err
+		}
+
+		response.StatusCode = res.StatusCode
+		return *request, *response, err
+	}
+
+	response.StatusCode = res.StatusCode
+	response.Audio = body
+	return *request, *response, nil
 }
