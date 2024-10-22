@@ -155,12 +155,16 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 	return err
 }
 
-func (oc OpenaiClient) Speech(opts ...audioOption) (audioRequest, audioResponse, error) {
+func (oc OpenaiClient) Speech(opts ...audioOption) (AudioRequest, AudioResponse, error) {
 	request, err := NewAudioRequest(opts...)
-	response := new(audioResponse)
 	if err != nil {
-		return *request, *response, err
+		return *request, AudioResponse{}, err
 	}
+	return oc.SpeechWithCustomRequest(request)
+}
+
+func (oc OpenaiClient) SpeechWithCustomRequest(request *AudioRequest) (AudioRequest, AudioResponse, error) {
+	response := new(AudioResponse)
 
 	res, err := makeHTTPAudioRequest(request, oc)
 	if err != nil {

@@ -4,6 +4,7 @@ import "errors"
 
 type clientOption func(*llmClient) error
 type completionOption func(*CompletionRequest) error
+type speechOption func(*AudioRequest) error
 
 func WithProvider(provider llmProvider) clientOption {
 	return func(lc *llmClient) error {

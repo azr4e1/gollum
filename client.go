@@ -68,4 +68,16 @@ func (c llmClient) Complete(options ...completionOption) (CompletionRequest, Com
 	return *request, CompletionResponse{}, nil
 }
 
-// func (c llmClient) Speech()
+func (c llmClient) Speech(options ...speechOption) (AudioRequest, AudioResponse, error) {
+	request, err := NewAudioRequest(options...)
+	if err != nil {
+		return *request, AudioResponse{}, err
+	}
+
+	switch c.provider {
+	case OPENAI:
+		return openaiSpeech(request, c)
+	}
+
+	return *request, AudioResponse{}, nil
+}

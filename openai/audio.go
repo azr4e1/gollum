@@ -12,7 +12,7 @@ import (
 type openaiVoice string
 type audioFormat string
 type audioModel string
-type audioOption func(*audioRequest) error
+type audioOption func(*AudioRequest) error
 
 const (
 	Alloy   openaiVoice = "alloy"
@@ -37,33 +37,33 @@ const (
 	TTS1HD audioModel = "tts-1-hd"
 )
 
-type audioRequest struct {
-	Model  audioModel  `json:"model"`
-	Input  string      `json:"input"`
-	Voice  openaiVoice `json:"voice"`
-	Format audioFormat `json:"response_format,omitempty"`
-	Speed  *float64    `json:"speed,omitempty"`
+type AudioRequest struct {
+	Model  string   `json:"model"`
+	Input  string   `json:"input"`
+	Voice  string   `json:"voice"`
+	Format string   `json:"response_format,omitempty"`
+	Speed  *float64 `json:"speed,omitempty"`
 }
 
-type audioResponse struct {
+type AudioResponse struct {
 	Audio      []byte      `json:"audio"`
-	Error      *audioError `json:"error,omitempty"`
+	Error      *AudioError `json:"error,omitempty"`
 	StatusCode int         `json:"status_code"`
 }
 
-type audioError struct {
+type AudioError struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
 }
 
 func WithAudioModel(model audioModel) audioOption {
-	return func(aR *audioRequest) error {
-		aR.Model = model
+	return func(aR *AudioRequest) error {
+		aR.Model = string(model)
 		return nil
 	}
 }
 func WithAudioInput(input string) audioOption {
-	return func(aR *audioRequest) error {
+	return func(aR *AudioRequest) error {
 		if input == "" {
 			return errors.New("input is empty.")
 		}
@@ -72,19 +72,19 @@ func WithAudioInput(input string) audioOption {
 	}
 }
 func WithAudioVoice(voice openaiVoice) audioOption {
-	return func(aR *audioRequest) error {
-		aR.Voice = voice
+	return func(aR *AudioRequest) error {
+		aR.Voice = string(voice)
 		return nil
 	}
 }
 func WithAudioFormat(format audioFormat) audioOption {
-	return func(aR *audioRequest) error {
-		aR.Format = format
+	return func(aR *AudioRequest) error {
+		aR.Format = string(format)
 		return nil
 	}
 }
 func WithAudioSpeed(speed float64) audioOption {
-	return func(aR *audioRequest) error {
+	return func(aR *AudioRequest) error {
 		if speed < 0.25 || speed > 4 {
 			return errors.New("speed must be between 0.25 and 4. Default is 1.")
 		}
@@ -93,29 +93,29 @@ func WithAudioSpeed(speed float64) audioOption {
 	}
 }
 
-func NewAudioRequest(opts ...audioOption) (*audioRequest, error) {
-	request := new(audioRequest)
+func NewAudioRequest(opts ...audioOption) (*AudioRequest, error) {
+	request := new(AudioRequest)
 	for _, o := range opts {
 		err := o(request)
 		if err != nil {
-			return nil, err
+			return &AudioRequest{}, err
 		}
 	}
 
 	if request.Model == "" {
-		return nil, errors.New("missing model.")
+		return &AudioRequest{}, errors.New("missing model.")
 	}
 	if request.Voice == "" {
-		return nil, errors.New("missing voice.")
+		return &AudioRequest{}, errors.New("missing voice.")
 	}
 	if request.Input == "" {
-		return nil, errors.New("missing input.")
+		return &AudioRequest{}, errors.New("missing input.")
 	}
 
 	return request, nil
 }
 
-func makeHTTPAudioRequest(request *audioRequest, oc OpenaiClient) (*http.Response, error) {
+func makeHTTPAudioRequest(request *AudioRequest, oc OpenaiClient) (*http.Response, error) {
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
