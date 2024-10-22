@@ -11,7 +11,7 @@ import (
 
 const (
 	completionURL = "https://api.openai.com/v1/chat/completions"
-	audioURL      = "https://api.openai.com/v1/audio/speech"
+	speechURL     = "https://api.openai.com/v1/audio/speech"
 )
 
 const (
@@ -19,9 +19,12 @@ const (
 	dataPrefix = "data: "
 )
 
+type StreamingFunction func(CompletionResponse) error
+
 type OpenaiClient struct {
-	apiKey        string
-	streamChannel chan CompletionResponse
+	apiKey         string
+	stream         bool
+	streamFunction StreamingFunction
 }
 
 func NewClient(apiKey string) (OpenaiClient, error) {
@@ -32,21 +35,17 @@ func NewClient(apiKey string) (OpenaiClient, error) {
 }
 
 func (oc *OpenaiClient) DisableStream() {
-	if c := oc.streamChannel; c != nil {
-		close(c)
-	}
-	oc.streamChannel = nil
+	oc.stream = false
+	oc.streamFunction = nil
 }
 
-func (oc *OpenaiClient) EnableStream() <-chan CompletionResponse {
-	c := make(chan CompletionResponse)
-	oc.streamChannel = c
-
-	return c
+func (oc *OpenaiClient) EnableStream(function StreamingFunction) {
+	oc.stream = true
+	oc.streamFunction = function
 }
 
 func (oc OpenaiClient) IsStreaming() bool {
-	return oc.streamChannel == nil
+	return oc.stream
 }
 
 func (oc OpenaiClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
@@ -59,9 +58,7 @@ func (oc OpenaiClient) Complete(options ...completionOption) (CompletionRequest,
 }
 
 func (oc OpenaiClient) CompleteWithCustomRequest(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
-	if oc.streamChannel != nil {
-		request.Stream = true
-	}
+	request.Stream = oc.stream
 
 	res, err := makeHTTPCompletionRequest(request, oc)
 	if err != nil {
@@ -69,7 +66,7 @@ func (oc OpenaiClient) CompleteWithCustomRequest(request *CompletionRequest) (Co
 	}
 	defer res.Body.Close()
 
-	if oc.streamChannel != nil {
+	if oc.stream {
 		err = oc.readCompletionStreamResponse(res)
 		return *request, CompletionResponse{}, err
 	}
@@ -106,10 +103,8 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 		line, err := reader.ReadBytes('\n')
 		if err != nil {
 			if err == io.EOF {
-				oc.streamChannel <- newEOS("End of stream.")
 				return nil
 			}
-			oc.streamChannel <- newEOS("Byte read error.")
 			return err
 		}
 
@@ -120,7 +115,6 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 		}
 
 		if string(line) == streamEnd {
-			oc.streamChannel <- newEOS("End of stream.")
 			return nil
 		}
 
@@ -132,33 +126,33 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 		chunk := new(CompletionResponse)
 		err = json.Unmarshal(line, chunk)
 		if err != nil {
-			oc.streamChannel <- newEOS("JSON unmarshalling error.")
 			return err
 		}
 		// attach status code to response object
 		chunk.StatusCode = res.StatusCode
 
-		oc.streamChannel <- *chunk
+		err = oc.streamFunction(*chunk)
+		if err != nil {
+			return err
+		}
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		oc.streamChannel <- newEOS("Byte read error.")
 		return err
 	}
 
 	openaiRes := new(CompletionResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
-		oc.streamChannel <- newEOS("JSON unmarshalling error.")
 		return err
 	}
 
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
-	oc.streamChannel <- *openaiRes
+	err = oc.streamFunction(*openaiRes)
 
-	return nil
+	return err
 }
 
 func (oc OpenaiClient) Speech(opts ...audioOption) (audioRequest, audioResponse, error) {

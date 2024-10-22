@@ -121,7 +121,7 @@ func makeHTTPAudioRequest(request *audioRequest, oc OpenaiClient) (*http.Respons
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, audioURL, bytes.NewReader(jsonRequest))
+	req, err := http.NewRequest(http.MethodPost, speechURL, bytes.NewReader(jsonRequest))
 	if err != nil {
 		return nil, err
 	}

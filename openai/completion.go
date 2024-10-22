@@ -66,22 +66,14 @@ func (or CompletionResponse) GetMessages() []string {
 	messages := []string{}
 	for _, c := range or.Choices {
 		// check if it's a streaming request
-		if c.Message.Content != "" {
+		if c.Message != nil && c.Message.Content != "" {
 			messages = append(messages, c.Message.Content)
-		} else if c.Delta.Content != "" {
+		} else if c.Delta != nil && c.Delta.Content != "" {
 			messages = append(messages, c.Delta.Content)
 		}
 	}
 
 	return messages
-}
-
-func (or CompletionResponse) IsEOS() bool {
-	return or.Error.Type == streamEnd
-}
-
-func newEOS(message string) CompletionResponse {
-	return CompletionResponse{Error: &CompletionError{Type: streamEnd, Message: message}}
 }
 
 func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
