@@ -1,8 +1,31 @@
-package openai
+package gollum
 
 import "errors"
 
+type clientOption func(*llmClient) error
 type completionOption func(*CompletionRequest) error
+
+func WithProvider(provider llmProvider) clientOption {
+	return func(lc *llmClient) error {
+		lc.provider = provider
+
+		return nil
+	}
+}
+func WithAPIKey(apiKey string) clientOption {
+	return func(lc *llmClient) error {
+		lc.apiKey = apiKey
+
+		return nil
+	}
+}
+func WithAPIBase(apiBase string) clientOption {
+	return func(lc *llmClient) error {
+		lc.apiBase = apiBase
+
+		return nil
+	}
+}
 
 func WithModel(modelName string) completionOption {
 	return func(oR *CompletionRequest) error {
@@ -144,10 +167,10 @@ func WithUser(user string) completionOption {
 	}
 }
 
-func WithTool(tools ...openaiTool) completionOption {
-	return func(oR *CompletionRequest) error {
-		oR.Tools = tools
+// func WithTool(tools ...openaiTool) completionOption {
+// 	return func(oR *completionRequest) error {
+// 		oR.Tools = tools
 
-		return nil
-	}
-}
+// 		return nil
+// 	}
+// }

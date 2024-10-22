@@ -115,7 +115,7 @@ func NewAudioRequest(opts ...audioOption) (*audioRequest, error) {
 	return request, nil
 }
 
-func makeHTTPAudioRequest(request *audioRequest, oc openaiClient) (*http.Response, error) {
+func makeHTTPAudioRequest(request *audioRequest, oc OpenaiClient) (*http.Response, error) {
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, err

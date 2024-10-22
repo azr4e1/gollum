@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-type completionRequest struct {
+type CompletionRequest struct {
 	Model               string       `json:"model"`
-	Messages            []message    `json:"messages"`
+	Messages            []Message    `json:"messages"`
 	Stream              bool         `json:"stream"`
 	Tools               []openaiTool `json:"tools,omitempty"`
 	FreqPenalty         *float64     `json:"frequency_penalty,omitempty"`
@@ -28,37 +28,37 @@ type completionRequest struct {
 	User                string       `json:"user,omitempty"`
 }
 
-type completionUsage struct {
+type CompletionUsage struct {
 	PromptTokens            int            `json:"prompt_tokens"`
 	CompletionTokens        int            `json:"completion_tokens"`
 	TotalTokens             int            `json:"total_tokens"`
 	CompletionTokensDetails map[string]any `json:"completion_tokens_details"`
 }
 
-type completionChoice struct {
+type CompletionChoice struct {
 	Index        int      `json:"index"`
-	Message      *message `json:"message,omitempty"`
-	Delta        *message `json:"delta,omitempty"`
+	Message      *Message `json:"message,omitempty"`
+	Delta        *Message `json:"delta,omitempty"`
 	FinishReason string   `json:"finish_reason"`
 }
 
-type completionError struct {
+type CompletionError struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
 }
 
-type completionResponse struct {
+type CompletionResponse struct {
 	Id         string             `json:"id"`
 	Object     string             `json:"object"`
 	Created    int                `json:"created"`
 	Model      string             `json:"model"`
-	Choices    []completionChoice `json:"choices"`
-	Usage      completionUsage    `json:"usage"`
-	Error      *completionError   `json:"error,omitempty"`
+	Choices    []CompletionChoice `json:"choices"`
+	Usage      CompletionUsage    `json:"usage"`
+	Error      *CompletionError   `json:"error,omitempty"`
 	StatusCode int                `json:"status_code"`
 }
 
-func (or completionResponse) GetMessages() []string {
+func (or CompletionResponse) GetMessages() []string {
 	if c := or.Choices; c == nil || len(c) == 0 {
 		return []string{}
 	}
@@ -76,35 +76,35 @@ func (or completionResponse) GetMessages() []string {
 	return messages
 }
 
-func (or completionResponse) IsEOS() bool {
+func (or CompletionResponse) IsEOS() bool {
 	return or.Error.Type == streamEnd
 }
 
-func newEOS(message string) completionResponse {
-	return completionResponse{Error: &completionError{Type: streamEnd, Message: message}}
+func newEOS(message string) CompletionResponse {
+	return CompletionResponse{Error: &CompletionError{Type: streamEnd, Message: message}}
 }
 
-func NewCompletionRequest(options ...completionOption) (*completionRequest, error) {
-	request := new(completionRequest)
+func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
+	request := new(CompletionRequest)
 
 	for _, o := range options {
 		err := o(request)
 		if err != nil {
-			return &completionRequest{}, err
+			return &CompletionRequest{}, err
 		}
 	}
 
 	if request.Model == "" {
-		return &completionRequest{}, errors.New("Missing model name.")
+		return &CompletionRequest{}, errors.New("Missing model name.")
 	}
 	if m := request.Messages; m == nil || len(m) == 0 {
-		return &completionRequest{}, errors.New("Missing messages to send.")
+		return &CompletionRequest{}, errors.New("Missing messages to send.")
 	}
 
 	return request, nil
 }
 
-func makeHTTPCompletionRequest(request *completionRequest, oc openaiClient) (*http.Response, error) {
+func makeHTTPCompletionRequest(request *CompletionRequest, oc OpenaiClient) (*http.Response, error) {
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, err

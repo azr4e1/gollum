@@ -19,71 +19,76 @@ const (
 	dataPrefix = "data: "
 )
 
-type openaiClient struct {
+type OpenaiClient struct {
 	apiKey        string
-	streamChannel chan completionResponse
+	streamChannel chan CompletionResponse
 }
 
-func NewClient(apiKey string) (openaiClient, error) {
+func NewClient(apiKey string) (OpenaiClient, error) {
 	if apiKey == "" {
-		return openaiClient{}, errors.New("Missing OpenAI API key.")
+		return OpenaiClient{}, errors.New("Missing OpenAI API key.")
 	}
-	return openaiClient{apiKey: apiKey}, nil
+	return OpenaiClient{apiKey: apiKey}, nil
 }
 
-func (oc *openaiClient) DisableStream() {
+func (oc *OpenaiClient) DisableStream() {
 	if c := oc.streamChannel; c != nil {
 		close(c)
 	}
 	oc.streamChannel = nil
 }
 
-func (oc *openaiClient) EnableStream() <-chan completionResponse {
-	c := make(chan completionResponse)
+func (oc *OpenaiClient) EnableStream() <-chan CompletionResponse {
+	c := make(chan CompletionResponse)
 	oc.streamChannel = c
 
 	return c
 }
 
-func (oc openaiClient) IsStreaming() bool {
+func (oc OpenaiClient) IsStreaming() bool {
 	return oc.streamChannel == nil
 }
 
-func (oc openaiClient) Complete(options ...completionOption) (completionRequest, completionResponse, error) {
+func (oc OpenaiClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
 	request, err := NewCompletionRequest(options...)
 	if err != nil {
-		return *request, completionResponse{}, err
+		return *request, CompletionResponse{}, err
 	}
+
+	return oc.CompleteWithCustomRequest(request)
+}
+
+func (oc OpenaiClient) CompleteWithCustomRequest(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
 	if oc.streamChannel != nil {
 		request.Stream = true
 	}
 
 	res, err := makeHTTPCompletionRequest(request, oc)
 	if err != nil {
-		return *request, completionResponse{}, err
+		return *request, CompletionResponse{}, err
 	}
 	defer res.Body.Close()
 
 	if oc.streamChannel != nil {
 		err = oc.readCompletionStreamResponse(res)
-		return *request, completionResponse{}, err
+		return *request, CompletionResponse{}, err
 	}
 
 	openaiRes, err := oc.readCompletionResponse(res)
 	return *request, openaiRes, err
 }
 
-func (oc openaiClient) readCompletionResponse(res *http.Response) (completionResponse, error) {
+func (oc OpenaiClient) readCompletionResponse(res *http.Response) (CompletionResponse, error) {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return completionResponse{}, err
+		return CompletionResponse{}, err
 	}
 
-	openaiRes := new(completionResponse)
+	openaiRes := new(CompletionResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
-		return completionResponse{}, err
+		return CompletionResponse{}, err
 	}
 
 	// attach status code to response object
@@ -92,7 +97,7 @@ func (oc openaiClient) readCompletionResponse(res *http.Response) (completionRes
 	return *openaiRes, nil
 }
 
-func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
+func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 
 	reader := bufio.NewReader(res.Body)
 
@@ -124,7 +129,7 @@ func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 			line = line[len([]byte(dataPrefix)):]
 		}
 
-		chunk := new(completionResponse)
+		chunk := new(CompletionResponse)
 		err = json.Unmarshal(line, chunk)
 		if err != nil {
 			oc.streamChannel <- newEOS("JSON unmarshalling error.")
@@ -142,7 +147,7 @@ func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 		return err
 	}
 
-	openaiRes := new(completionResponse)
+	openaiRes := new(CompletionResponse)
 	err = json.Unmarshal(body, openaiRes)
 	if err != nil {
 		oc.streamChannel <- newEOS("JSON unmarshalling error.")
@@ -156,7 +161,7 @@ func (oc openaiClient) readCompletionStreamResponse(res *http.Response) error {
 	return nil
 }
 
-func (oc openaiClient) Speech(opts ...audioOption) (audioRequest, audioResponse, error) {
+func (oc OpenaiClient) Speech(opts ...audioOption) (audioRequest, audioResponse, error) {
 	request, err := NewAudioRequest(opts...)
 	response := new(audioResponse)
 	if err != nil {
