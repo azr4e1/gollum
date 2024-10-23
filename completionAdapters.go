@@ -144,7 +144,7 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 		}
 	}
 	converted := CompletionResponse{
-		Created:    created.Second(),
+		Created:    int(created.Unix()),
 		Model:      response.Model,
 		Choices:    choices,
 		Usage:      usage,
