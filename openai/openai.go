@@ -186,10 +186,10 @@ func (oc OpenaiClient) TTSWithCustomRequest(request *TTSRequest) (TTSRequest, TT
 		}
 
 		response.StatusCode = res.StatusCode
-		return *request, *response, err
+		return *request, *response, response.Err()
 	}
 
 	response.StatusCode = res.StatusCode
 	response.Audio = body
-	return *request, *response, nil
+	return *request, *response, response.Err()
 }

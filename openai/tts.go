@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 type openaiVoice string
@@ -46,9 +45,17 @@ type TTSRequest struct {
 }
 
 type TTSResponse struct {
-	Audio      []byte    `json:"audio"`
-	Error      *TTSError `json:"error,omitempty"`
-	StatusCode int       `json:"status_code"`
+	Audio      []byte   `json:"audio"`
+	Error      TTSError `json:"error,omitempty"`
+	StatusCode int      `json:"status_code"`
+}
+
+func (ttsr TTSResponse) Err() error {
+	if ttsr.Error.Type == "" && ttsr.Error.Message == "" {
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("%s: %s", ttsr.Error.Type, ttsr.Error.Message))
 }
 
 type TTSError struct {
@@ -92,7 +99,7 @@ func makeHTTPTTSRequest(request *TTSRequest, oc OpenaiClient) (*http.Response, e
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
 
-	client := http.Client{Timeout: time.Duration(30 * time.Second)}
+	client := http.Client{Timeout: oc.Timeout}
 	res, err := client.Do(req)
 
 	return res, err

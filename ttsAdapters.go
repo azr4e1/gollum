@@ -17,9 +17,9 @@ func (ar TTSRequest) ToOpenAI() oai.TTSRequest {
 }
 
 func SpeechResponseFromOpenAI(response oai.TTSResponse) TTSResponse {
-	var error *TTSError
-	if response.Error != nil {
-		error = &TTSError{
+	var error TTSError
+	if response.Err() != nil {
+		error = TTSError{
 			Message: response.Error.Message,
 			Type:    response.Error.Type,
 		}

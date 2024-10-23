@@ -1,6 +1,9 @@
 package gollum
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type TTSRequest struct {
 	Model  string   `json:"model"`
@@ -11,9 +14,17 @@ type TTSRequest struct {
 }
 
 type TTSResponse struct {
-	Audio      []byte    `json:"audio"`
-	Error      *TTSError `json:"error,omitempty"`
-	StatusCode int       `json:"status_code"`
+	Audio      []byte   `json:"audio"`
+	Error      TTSError `json:"error,omitempty"`
+	StatusCode int      `json:"status_code"`
+}
+
+func (ttsr TTSResponse) Err() error {
+	if ttsr.Error.Type == "" && ttsr.Error.Message == "" {
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("%s: %s", ttsr.Error.Type, ttsr.Error.Message))
 }
 
 type TTSError struct {
