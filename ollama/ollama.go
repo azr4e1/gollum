@@ -72,8 +72,8 @@ func (oc OllamaClient) CompleteWithCustomRequest(request *CompletionRequest) (Co
 		return *request, CompletionResponse{}, err
 	}
 
-	openaiRes, err := oc.readCompletionResponse(res)
-	return *request, openaiRes, err
+	ollamaRes, err := oc.readCompletionResponse(res)
+	return *request, ollamaRes, err
 }
 
 func (oc OllamaClient) readCompletionResponse(res *http.Response) (CompletionResponse, error) {
@@ -83,16 +83,16 @@ func (oc OllamaClient) readCompletionResponse(res *http.Response) (CompletionRes
 		return CompletionResponse{}, err
 	}
 
-	openaiRes := new(CompletionResponse)
-	err = json.Unmarshal(body, openaiRes)
+	ollamaRes := new(CompletionResponse)
+	err = json.Unmarshal(body, ollamaRes)
 	if err != nil {
 		return CompletionResponse{}, err
 	}
 
 	// attach status code to response object
-	openaiRes.StatusCode = res.StatusCode
+	ollamaRes.StatusCode = res.StatusCode
 
-	return *openaiRes, nil
+	return *ollamaRes, ollamaRes.Err()
 }
 
 func (oc OllamaClient) readCompletionStreamResponse(res *http.Response) error {
@@ -143,15 +143,14 @@ func (oc OllamaClient) readCompletionStreamResponse(res *http.Response) error {
 		return err
 	}
 
-	openaiRes := new(CompletionResponse)
-	err = json.Unmarshal(body, openaiRes)
+	ollamaRes := new(CompletionResponse)
+	err = json.Unmarshal(body, ollamaRes)
 	if err != nil {
 		return err
 	}
 
 	// attach status code to response object
-	openaiRes.StatusCode = res.StatusCode
-	err = oc.streamFunction(*openaiRes)
+	ollamaRes.StatusCode = res.StatusCode
 
-	return err
+	return ollamaRes.Err()
 }

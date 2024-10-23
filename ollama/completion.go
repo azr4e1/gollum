@@ -49,6 +49,13 @@ func (or CompletionResponse) GetMessages() []string {
 	return messages
 }
 
+func (or CompletionResponse) Err() error {
+	if or.Error == "" {
+		return nil
+	}
+	return errors.New(or.Error)
+}
+
 func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
 	request := new(CompletionRequest)
 
