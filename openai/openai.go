@@ -93,7 +93,7 @@ func (oc OpenaiClient) readCompletionResponse(res *http.Response) (CompletionRes
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
 
-	return *openaiRes, nil
+	return *openaiRes, openaiRes.Err()
 }
 
 func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
@@ -152,9 +152,8 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
-	err = oc.streamFunction(*openaiRes)
 
-	return err
+	return openaiRes.Err()
 }
 
 func (oc OpenaiClient) TextToSpeech(opts ...ttsOption) (TTSRequest, TTSResponse, error) {

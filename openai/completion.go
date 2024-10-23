@@ -35,10 +35,10 @@ type CompletionUsage struct {
 }
 
 type CompletionChoice struct {
-	Index        int      `json:"index"`
-	Message      *Message `json:"message,omitempty"`
-	Delta        *Message `json:"delta,omitempty"`
-	FinishReason string   `json:"finish_reason"`
+	Index        int     `json:"index"`
+	Message      Message `json:"message,omitempty"`
+	Delta        Message `json:"delta,omitempty"`
+	FinishReason string  `json:"finish_reason"`
 }
 
 type CompletionError struct {
@@ -53,11 +53,11 @@ type CompletionResponse struct {
 	Model      string             `json:"model"`
 	Choices    []CompletionChoice `json:"choices"`
 	Usage      CompletionUsage    `json:"usage"`
-	Error      *CompletionError   `json:"error,omitempty"`
+	Error      CompletionError    `json:"error,omitempty"`
 	StatusCode int                `json:"status_code"`
 }
 
-func (or CompletionResponse) GetMessages() []string {
+func (or CompletionResponse) Messages() []string {
 	if c := or.Choices; c == nil || len(c) == 0 {
 		return []string{}
 	}
@@ -65,14 +65,21 @@ func (or CompletionResponse) GetMessages() []string {
 	messages := []string{}
 	for _, c := range or.Choices {
 		// check if it's a streaming request
-		if c.Message != nil && c.Message.Content != "" {
+		if c.Message.Content != "" {
 			messages = append(messages, c.Message.Content)
-		} else if c.Delta != nil && c.Delta.Content != "" {
+		} else if c.Delta.Content != "" {
 			messages = append(messages, c.Delta.Content)
 		}
 	}
 
 	return messages
+}
+
+func (or CompletionResponse) Err() error {
+	if or.Error.Type == "" && or.Error.Message == "" {
+		return nil
+	}
+	return errors.New(fmt.Sprintf("%s: %s", or.Error.Type, or.Error.Message))
 }
 
 func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
