@@ -9,7 +9,7 @@ Small library for LLM completion. It provides a single client to interface to mu
   - [X] TTS
   - [ ] Embeddings
 - Ollama:
-  - [ ] Completion
+  - [x] Completion
   - [ ] Embeddings
 - Gemini:
   - [ ] Completion
