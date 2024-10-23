@@ -1,6 +1,9 @@
 package gollum
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 const streamEnd = "gollum_end_of_stream"
 
@@ -32,8 +35,7 @@ type CompletionUsage struct {
 
 type CompletionChoice struct {
 	Index        int
-	Message      *Message
-	Delta        *Message
+	Message      Message
 	FinishReason string
 }
 
@@ -49,11 +51,11 @@ type CompletionResponse struct {
 	Model      string
 	Choices    []CompletionChoice
 	Usage      CompletionUsage
-	Error      *CompletionError
+	Error      CompletionError
 	StatusCode int
 }
 
-func (or CompletionResponse) GetMessages() []string {
+func (or CompletionResponse) Messages() []string {
 	if c := or.Choices; c == nil || len(c) == 0 {
 		return []string{}
 	}
@@ -61,18 +63,19 @@ func (or CompletionResponse) GetMessages() []string {
 	messages := []string{}
 	for _, c := range or.Choices {
 		// check if it's a streaming request
-		if c.Message != nil && c.Message.Content != "" {
+		if c.Message.Content != "" {
 			messages = append(messages, c.Message.Content)
-		} else if c.Delta != nil && c.Delta.Content != "" {
-			messages = append(messages, c.Delta.Content)
 		}
 	}
 
 	return messages
 }
 
-func newEOS(message string) CompletionResponse {
-	return CompletionResponse{Error: &CompletionError{Type: streamEnd, Message: message}}
+func (or CompletionResponse) Err() error {
+	if or.Error.Type == "" && or.Error.Message == "" {
+		return nil
+	}
+	return errors.New(fmt.Sprintf("%s: %s", or.Error.Type, or.Error.Message))
 }
 
 func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {

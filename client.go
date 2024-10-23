@@ -66,9 +66,11 @@ func (c llmClient) Complete(options ...completionOption) (CompletionRequest, Com
 	switch c.provider {
 	case OPENAI:
 		return openaiComplete(request, c)
+	case OLLAMA:
+		return ollamaComplete(request, c)
 	}
 
-	return *request, CompletionResponse{}, nil
+	return *request, CompletionResponse{}, errors.New("completion not implemented for this provider.")
 }
 
 func (c llmClient) TextToSpeech(options ...speechOption) (TTSRequest, TTSResponse, error) {
@@ -82,5 +84,5 @@ func (c llmClient) TextToSpeech(options ...speechOption) (TTSRequest, TTSRespons
 		return openaiTTS(request, c)
 	}
 
-	return *request, TTSResponse{}, nil
+	return *request, TTSResponse{}, errors.New("text to speech not implemented for this provider.")
 }
