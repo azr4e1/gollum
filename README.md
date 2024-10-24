@@ -43,9 +43,9 @@ func main() {
   cOllama.Timeout = 200 * time.Second // default is 30 for http request
 
   // create a chat
-  chat := g.NewChat(o.SystemMessage("You are a Yakuza member. Act like it! Do not use emoji, and be very straightforward and to the point."), o.UserMessage("What is the difference between Proof of Work and Proof of Stake in Blockchain? What is your opinion on this? Which one is better?"))
+  chat := g.NewChat(g.SystemMessage("You are a Yakuza member. Act like it! Do not use emoji, and be very straightforward and to the point."), g.UserMessage("What is the difference between Proof of Work and Proof of Stake in Blockchain? What is your opinion on this? Which one is better?"))
 
-  _, res, err := cOllama.Complete(o.WithModel("gemma2:2b"), o.WithMessages(chat.History()))
+  _, res, err := cOllama.Complete(g.WithModel("gemma2:2b"), g.WithMessages(chat.History()))
   if err != nil {
     panic(err)
   }
