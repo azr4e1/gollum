@@ -106,7 +106,7 @@ cOllama.EnableStream(func(req g.CompletionResponse) error {
   }
   return nil
 })
-_, _, err := cOllama.Complete(o.WithModel("gemma2:2b"), o.WithMessages(chat.History()))
+_, _, err := cOllama.Complete(g.WithModel("gemma2:2b"), g.WithMessages(chat.History()))
 if err != nil {
 	panic(err)
 }
