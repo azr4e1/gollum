@@ -29,7 +29,7 @@ func NewClient(options ...clientOption) (llmClient, error) {
 	for _, o := range options {
 		err := o(client)
 		if err != nil {
-			return llmClient{}, nil
+			return llmClient{}, err
 		}
 	}
 
