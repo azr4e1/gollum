@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,22 +10,23 @@ import (
 )
 
 type CompletionRequest struct {
-	Model               string       `json:"model"`
-	Messages            []Message    `json:"messages"`
-	Stream              bool         `json:"stream"`
-	Tools               []openaiTool `json:"tools,omitempty"`
-	FreqPenalty         *float64     `json:"frequency_penalty,omitempty"`
-	LogitBias           map[int]int  `json:"logit_bias,omitempty"`
-	LogProbs            *bool        `json:"logprobs,omitempty"`
-	TopLogProbs         *int         `json:"top_logprobs,omitempty"`
-	MaxCompletionTokens *int         `json:"max_completion_tokens,omitempty"`
-	CompletionChoices   *int         `json:"n,omitempty"`
-	PresencePenalty     *float64     `json:"presence_penalty,omitempty"`
-	Seed                *int         `json:"seed,omitempty"`
-	Stop                []string     `json:"stop,omitempty"`
-	Temperature         *float64     `json:"temperature,omitempty"`
-	TopP                *float64     `json:"top_p,omitempty"`
-	User                string       `json:"user,omitempty"`
+	Model               string          `json:"model"`
+	Messages            []Message       `json:"messages"`
+	Stream              bool            `json:"stream"`
+	Tools               []openaiTool    `json:"tools,omitempty"`
+	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
+	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
+	LogProbs            *bool           `json:"logprobs,omitempty"`
+	TopLogProbs         *int            `json:"top_logprobs,omitempty"`
+	MaxCompletionTokens *int            `json:"max_completion_tokens,omitempty"`
+	CompletionChoices   *int            `json:"n,omitempty"`
+	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
+	Seed                *int            `json:"seed,omitempty"`
+	Stop                []string        `json:"stop,omitempty"`
+	Temperature         *float64        `json:"temperature,omitempty"`
+	TopP                *float64        `json:"top_p,omitempty"`
+	User                string          `json:"user,omitempty"`
+	Ctx                 context.Context `json:"-"`
 }
 
 type CompletionUsage struct {
@@ -115,6 +117,9 @@ func makeHTTPCompletionRequest(request *CompletionRequest, oc OpenaiClient) (*ht
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
+	if request.Ctx != nil {
+		req = req.WithContext(request.Ctx)
+	}
 
 	client := http.Client{Timeout: oc.Timeout}
 	res, err := client.Do(req)

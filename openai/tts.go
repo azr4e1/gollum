@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,11 +38,12 @@ const (
 )
 
 type TTSRequest struct {
-	Model  string   `json:"model"`
-	Input  string   `json:"input"`
-	Voice  string   `json:"voice"`
-	Format string   `json:"response_format,omitempty"`
-	Speed  *float64 `json:"speed,omitempty"`
+	Model  string          `json:"model"`
+	Input  string          `json:"input"`
+	Voice  string          `json:"voice"`
+	Format string          `json:"response_format,omitempty"`
+	Speed  *float64        `json:"speed,omitempty"`
+	Ctx    context.Context `json:"-"`
 }
 
 type TTSResponse struct {
@@ -98,6 +100,9 @@ func makeHTTPTTSRequest(request *TTSRequest, oc OpenaiClient) (*http.Response, e
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oc.apiKey))
+	if request.Ctx != nil {
+		req = req.WithContext(request.Ctx)
+	}
 
 	client := http.Client{Timeout: oc.Timeout}
 	res, err := client.Do(req)

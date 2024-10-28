@@ -1,6 +1,9 @@
 package gollum
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type clientOption func(*llmClient) error
 type completionOption func(*CompletionRequest) error
@@ -15,6 +18,9 @@ func WithProvider(provider llmProvider) clientOption {
 }
 func WithAPIKey(apiKey string) clientOption {
 	return func(lc *llmClient) error {
+		if apiKey == "" {
+			return errors.New("must provide API key.")
+		}
 		lc.apiKey = apiKey
 
 		return nil
@@ -147,6 +153,7 @@ func WithTemperature(temperature float64) completionOption {
 		return nil
 	}
 }
+
 func WithTopP(topP float64) completionOption {
 	return func(oR *CompletionRequest) error {
 		if topP < 0.0 || topP > 1 {
@@ -157,12 +164,21 @@ func WithTopP(topP float64) completionOption {
 		return nil
 	}
 }
+
 func WithUser(user string) completionOption {
 	return func(oR *CompletionRequest) error {
 		if user == "" {
 			return errors.New("Cannot set user to empty string.")
 		}
 		oR.User = user
+
+		return nil
+	}
+}
+
+func WithContext(ctx context.Context) completionOption {
+	return func(oR *CompletionRequest) error {
+		oR.Ctx = ctx
 
 		return nil
 	}
@@ -218,6 +234,14 @@ func WithTTSSpeed(speed float64) speechOption {
 			return errors.New("speed must be between 0.25 and 4. Default is 1.")
 		}
 		aR.Speed = &speed
+		return nil
+	}
+}
+
+func WithTTSContext(ctx context.Context) speechOption {
+	return func(aR *TTSRequest) error {
+		aR.Ctx = ctx
+
 		return nil
 	}
 }

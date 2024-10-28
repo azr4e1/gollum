@@ -11,6 +11,7 @@ func (ar TTSRequest) ToOpenAI() oai.TTSRequest {
 		Voice:  ar.Voice,
 		Format: ar.Format,
 		Speed:  ar.Speed,
+		Ctx:    ar.Ctx,
 	}
 
 	return ttsReq

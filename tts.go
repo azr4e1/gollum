@@ -1,16 +1,18 @@
 package gollum
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
 
 type TTSRequest struct {
-	Model  string   `json:"model"`
-	Input  string   `json:"input"`
-	Voice  string   `json:"voice"`
-	Format string   `json:"response_format,omitempty"`
-	Speed  *float64 `json:"speed,omitempty"`
+	Model  string          `json:"model"`
+	Input  string          `json:"input"`
+	Voice  string          `json:"voice"`
+	Format string          `json:"response_format,omitempty"`
+	Speed  *float64        `json:"speed,omitempty"`
+	Ctx    context.Context `json:"-"`
 }
 
 type TTSResponse struct {

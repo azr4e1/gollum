@@ -28,6 +28,7 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 		Temperature:         cr.Temperature,
 		TopP:                cr.TopP,
 		User:                cr.User,
+		Ctx:                 cr.Ctx,
 		// Tools:               []openaiTool,
 	}
 
@@ -43,6 +44,7 @@ func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
 		Model:    cr.Model,
 		Messages: messages,
 		Stream:   cr.Stream,
+		Ctx:      cr.Ctx,
 		// FreqPenalty:         cr.FreqPenalty,
 		// LogitBias:           cr.LogitBias,
 		// LogProbs:            cr.LogProbs,

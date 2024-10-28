@@ -1,6 +1,9 @@
 package openai
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type completionOption func(*CompletionRequest) error
 
@@ -123,6 +126,7 @@ func WithTemperature(temperature float64) completionOption {
 		return nil
 	}
 }
+
 func WithTopP(topP float64) completionOption {
 	return func(oR *CompletionRequest) error {
 		if topP < 0.0 || topP > 1 {
@@ -133,6 +137,7 @@ func WithTopP(topP float64) completionOption {
 		return nil
 	}
 }
+
 func WithUser(user string) completionOption {
 	return func(oR *CompletionRequest) error {
 		if user == "" {
@@ -152,12 +157,21 @@ func WithTool(tools ...openaiTool) completionOption {
 	}
 }
 
+func WithContext(ctx context.Context) completionOption {
+	return func(oR *CompletionRequest) error {
+		oR.Ctx = ctx
+
+		return nil
+	}
+}
+
 func WithTTSModel(model ttsModel) ttsOption {
 	return func(aR *TTSRequest) error {
 		aR.Model = string(model)
 		return nil
 	}
 }
+
 func WithTTSInput(input string) ttsOption {
 	return func(aR *TTSRequest) error {
 		if input == "" {
@@ -167,24 +181,35 @@ func WithTTSInput(input string) ttsOption {
 		return nil
 	}
 }
+
 func WithTTSVoice(voice openaiVoice) ttsOption {
 	return func(aR *TTSRequest) error {
 		aR.Voice = string(voice)
 		return nil
 	}
 }
+
 func WithTTSFormat(format ttsFormat) ttsOption {
 	return func(aR *TTSRequest) error {
 		aR.Format = string(format)
 		return nil
 	}
 }
+
 func WithTTSSpeed(speed float64) ttsOption {
 	return func(aR *TTSRequest) error {
 		if speed < 0.25 || speed > 4 {
 			return errors.New("speed must be between 0.25 and 4. Default is 1.")
 		}
 		aR.Speed = &speed
+		return nil
+	}
+}
+
+func WithTTSContext(ctx context.Context) ttsOption {
+	return func(aR *TTSRequest) error {
+		aR.Ctx = ctx
+
 		return nil
 	}
 }

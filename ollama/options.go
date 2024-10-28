@@ -1,6 +1,9 @@
 package ollama
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type completionOption func(*CompletionRequest) error
 
@@ -18,6 +21,14 @@ func WithMessages(messages []Message) completionOption {
 			return errors.New("Missing messages to send.")
 		}
 		oR.Messages = messages
+
+		return nil
+	}
+}
+
+func WithContext(ctx context.Context) completionOption {
+	return func(oR *CompletionRequest) error {
+		oR.Ctx = ctx
 
 		return nil
 	}

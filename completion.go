@@ -1,6 +1,7 @@
 package gollum
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
@@ -23,6 +24,7 @@ type CompletionRequest struct {
 	Temperature         *float64
 	TopP                *float64
 	User                string
+	Ctx                 context.Context
 	// Tools               []openaiTool
 }
 

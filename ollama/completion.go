@@ -2,6 +2,7 @@ package ollama
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,9 +11,10 @@ import (
 )
 
 type CompletionRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-	Stream   bool      `json:"stream"`
+	Model    string          `json:"model"`
+	Messages []Message       `json:"messages"`
+	Stream   bool            `json:"stream"`
+	Ctx      context.Context `json:"-"`
 	// Tools               []openaiTool `json:"tools,omitempty"`
 	// FreqPenalty         *float64     `json:"frequency_penalty,omitempty"`
 	// LogitBias           map[int]int  `json:"logit_bias,omitempty"`
@@ -90,6 +92,9 @@ func makeHTTPCompletionRequest(request *CompletionRequest, oc OllamaClient) (*ht
 	req, err := http.NewRequest(http.MethodPost, url.String(), bytes.NewReader(jsonRequest))
 	if err != nil {
 		return nil, err
+	}
+	if request.Ctx != nil {
+		req = req.WithContext(request.Ctx)
 	}
 
 	client := http.Client{Timeout: oc.Timeout}
