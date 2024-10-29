@@ -26,6 +26,18 @@ func WithMessages(messages []Message) completionOption {
 	}
 }
 
+func WithMessage(message string) completionOption {
+	return func(oR *CompletionRequest) error {
+		if len(message) == 0 {
+			return errors.New("Missing message to send.")
+		}
+		messages := []Message{UserMessage(message)}
+		oR.Messages = messages
+
+		return nil
+	}
+}
+
 func WithFreqPenalty(freqPenalty float64) completionOption {
 	return func(oR *CompletionRequest) error {
 		if freqPenalty < -2.0 || freqPenalty > 2.0 {
