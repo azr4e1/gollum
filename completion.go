@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	m "github.com/azr4e1/gollum/message"
 )
 
 const streamEnd = "gollum_end_of_stream"
 
 type CompletionRequest struct {
 	Model               string
-	Messages            []Message
+	Messages            []m.Message
 	Stream              bool
 	FreqPenalty         *float64
 	LogitBias           map[int]int
@@ -37,7 +38,7 @@ type CompletionUsage struct {
 
 type CompletionChoice struct {
 	Index        int
-	Message      Message
+	Message      m.Message
 	FinishReason string
 }
 

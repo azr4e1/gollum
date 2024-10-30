@@ -1,42 +1,62 @@
-package gollum
+package message
 
-import "errors"
-
-const (
-	System    = "system"
-	Assistant = "assistant"
-	User      = "user"
+import (
+	"errors"
 )
 
-type Message struct {
-	Role    string
-	Content string
-}
-
-type chat struct {
+type Chat struct {
 	messages []Message
+	limit    int
 }
 
-func NewChat(m ...Message) chat {
-	return chat{messages: m}
+func (c *Chat) SetLimit(limit int) error {
+	if limit < 0 {
+		return errors.New("limit cannot be < 0.")
+	}
+	c.limit = limit
+	return nil
 }
 
-func (c *chat) Add(m ...Message) {
+func NewChat(m ...Message) Chat {
+	return Chat{messages: m}
+}
+
+func (c *Chat) Add(m ...Message) {
+	if c.messages == nil {
+		c.messages = []Message{}
+	}
+
 	c.messages = append(c.messages, m...)
+	if c.limit > 0 && len(c.messages) > c.limit {
+		trimmedMess := c.messages[len(c.messages)-c.limit:]
+		sm := c.messages[0]
+		if sm.Role == System {
+			trimmedMess[0] = sm
+		}
+		c.messages = trimmedMess
+	}
 }
 
-func (c *chat) History() []Message {
+func (c Chat) History() []Message {
 	if c.messages == nil {
 		return []Message{}
 	}
 	return c.messages
 }
 
-func (c *chat) Clear() {
+func (c Chat) IsEmpty() bool {
+	if c.messages == nil || len(c.messages) == 0 {
+		return true
+	}
+
+	return false
+}
+
+func (c *Chat) Clear() {
 	clear(c.messages)
 }
 
-func (c *chat) Pop() (Message, error) {
+func (c *Chat) Pop() (Message, error) {
 	if c.messages == nil || len(c.messages) == 0 {
 		return Message{}, errors.New("chat is empty.")
 	}
@@ -47,14 +67,14 @@ func (c *chat) Pop() (Message, error) {
 	return lastEl, nil
 }
 
-func (c *chat) Len() int {
+func (c *Chat) Len() int {
 	if c.messages == nil {
 		return 0
 	}
 	return len(c.messages)
 }
 
-func (c *chat) SystemMessages() []Message {
+func (c *Chat) SystemMessages() []Message {
 	messages := []Message{}
 	if c.messages == nil {
 		return messages
@@ -68,7 +88,7 @@ func (c *chat) SystemMessages() []Message {
 	return messages
 }
 
-func (c *chat) UserMessages() []Message {
+func (c *Chat) UserMessages() []Message {
 	messages := []Message{}
 	if c.messages == nil {
 		return messages
@@ -82,7 +102,7 @@ func (c *chat) UserMessages() []Message {
 	return messages
 }
 
-func (c *chat) AssistantMessages() []Message {
+func (c *Chat) AssistantMessages() []Message {
 	messages := []Message{}
 	if c.messages == nil {
 		return messages
@@ -94,16 +114,4 @@ func (c *chat) AssistantMessages() []Message {
 	}
 
 	return messages
-}
-
-func SystemMessage(content string) Message {
-	return Message{Role: System, Content: content}
-}
-
-func UserMessage(content string) Message {
-	return Message{Role: User, Content: content}
-}
-
-func AssistantMessage(content string) Message {
-	return Message{Role: Assistant, Content: content}
 }

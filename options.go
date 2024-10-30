@@ -3,6 +3,7 @@ package gollum
 import (
 	"context"
 	"errors"
+	m "github.com/azr4e1/gollum/message"
 )
 
 type clientOption func(*llmClient) error
@@ -42,12 +43,12 @@ func WithModel(modelName string) completionOption {
 	}
 }
 
-func WithMessages(messages []Message) completionOption {
+func WithChat(chat m.Chat) completionOption {
 	return func(oR *CompletionRequest) error {
-		if messages == nil || len(messages) == 0 {
+		if chat.IsEmpty() {
 			return errors.New("Missing messages to send.")
 		}
-		oR.Messages = messages
+		oR.Messages = chat.History()
 
 		return nil
 	}
@@ -58,7 +59,7 @@ func WithMessage(message string) completionOption {
 		if len(message) == 0 {
 			return errors.New("Missing message to send.")
 		}
-		messages := []Message{UserMessage(message)}
+		messages := []m.Message{m.UserMessage(message)}
 		oR.Messages = messages
 
 		return nil

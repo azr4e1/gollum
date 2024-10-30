@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	m "github.com/azr4e1/gollum/message"
 	"net/http"
 )
 
 type CompletionRequest struct {
 	Model               string          `json:"model"`
-	Messages            []Message       `json:"messages"`
+	Messages            []m.Message     `json:"messages"`
 	Stream              bool            `json:"stream"`
 	Tools               []openaiTool    `json:"tools,omitempty"`
 	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`

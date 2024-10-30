@@ -3,14 +3,15 @@ package gollum
 import (
 	"time"
 
+	m "github.com/azr4e1/gollum/message"
 	ll "github.com/azr4e1/gollum/ollama"
 	oai "github.com/azr4e1/gollum/openai"
 )
 
 func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
-	messages := []oai.Message{}
-	for _, m := range cr.Messages {
-		messages = append(messages, oai.Message{Role: m.Role, Content: m.Content})
+	messages := []m.Message{}
+	for _, mess := range cr.Messages {
+		messages = append(messages, m.Message{Role: mess.Role, Content: mess.Content})
 	}
 	request := oai.CompletionRequest{
 		Model:               cr.Model,
@@ -36,9 +37,9 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 }
 
 func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
-	messages := []ll.Message{}
-	for _, m := range cr.Messages {
-		messages = append(messages, ll.Message{Role: m.Role, Content: m.Content})
+	messages := []m.Message{}
+	for _, mess := range cr.Messages {
+		messages = append(messages, m.Message{Role: mess.Role, Content: mess.Content})
 	}
 	request := ll.CompletionRequest{
 		Model:    cr.Model,
@@ -73,11 +74,11 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 
 	choices := []CompletionChoice{}
 	for _, c := range response.Choices {
-		var message Message
+		var message m.Message
 		if c.Message.Content != "" {
-			message = Message{Role: c.Message.Role, Content: c.Message.Content}
+			message = m.Message{Role: c.Message.Role, Content: c.Message.Content}
 		} else if c.Delta.Content != "" {
-			message = Message{Role: c.Delta.Role, Content: c.Delta.Content}
+			message = m.Message{Role: c.Delta.Role, Content: c.Delta.Content}
 		}
 		choice := CompletionChoice{
 			Index:        c.Index,
@@ -116,9 +117,9 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 	}
 
 	choices := []CompletionChoice{}
-	var message Message
+	var message m.Message
 	if response.Message.Content != "" {
-		message = Message{Role: response.Message.Role, Content: response.Message.Content}
+		message = m.Message{Role: response.Message.Role, Content: response.Message.Content}
 	}
 	var finishReason string
 	if response.Done {

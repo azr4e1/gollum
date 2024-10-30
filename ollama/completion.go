@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	m "github.com/azr4e1/gollum/message"
 	"net/http"
 	"net/url"
 	"path"
@@ -12,7 +13,7 @@ import (
 
 type CompletionRequest struct {
 	Model    string          `json:"model"`
-	Messages []Message       `json:"messages"`
+	Messages []m.Message     `json:"messages"`
 	Stream   bool            `json:"stream"`
 	Ctx      context.Context `json:"-"`
 	// Tools               []openaiTool `json:"tools,omitempty"`
@@ -31,18 +32,18 @@ type CompletionRequest struct {
 }
 
 type CompletionResponse struct {
-	Created            string  `json:"created_at"`
-	Model              string  `json:"model"`
-	Message            Message `json:"message"`
-	Done               bool    `json:"done"`
-	TotalDuration      int     `json:"total_duration"`
-	LoadDuration       int     `json:"load_duration"`
-	PromptEvalCount    int     `json:"prompt_eval_count"`
-	PromptEvalDuration int     `json:"prompt_eval_duration"`
-	EvalCount          int     `json:"eval_count"`
-	EvalDuration       int     `json:"eval_duration"`
-	Error              string  `json:"error,omitempty"`
-	StatusCode         int     `json:"status_code"`
+	Created            string    `json:"created_at"`
+	Model              string    `json:"model"`
+	Message            m.Message `json:"message"`
+	Done               bool      `json:"done"`
+	TotalDuration      int       `json:"total_duration"`
+	LoadDuration       int       `json:"load_duration"`
+	PromptEvalCount    int       `json:"prompt_eval_count"`
+	PromptEvalDuration int       `json:"prompt_eval_duration"`
+	EvalCount          int       `json:"eval_count"`
+	EvalDuration       int       `json:"eval_duration"`
+	Error              string    `json:"error,omitempty"`
+	StatusCode         int       `json:"status_code"`
 }
 
 func (or CompletionResponse) GetMessages() []string {
