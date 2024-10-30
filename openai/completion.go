@@ -38,10 +38,10 @@ type CompletionUsage struct {
 }
 
 type CompletionChoice struct {
-	Index        int     `json:"index"`
-	Message      Message `json:"message,omitempty"`
-	Delta        Message `json:"delta,omitempty"`
-	FinishReason string  `json:"finish_reason"`
+	Index        int       `json:"index"`
+	Message      m.Message `json:"message,omitempty"`
+	Delta        m.Message `json:"delta,omitempty"`
+	FinishReason string    `json:"finish_reason"`
 }
 
 type CompletionError struct {
@@ -60,49 +60,11 @@ type CompletionResponse struct {
 	StatusCode int                `json:"status_code"`
 }
 
-func (or CompletionResponse) Messages() []string {
-	if c := or.Choices; c == nil || len(c) == 0 {
-		return []string{}
-	}
-
-	messages := []string{}
-	for _, c := range or.Choices {
-		// check if it's a streaming request
-		if c.Message.Content != "" {
-			messages = append(messages, c.Message.Content)
-		} else if c.Delta.Content != "" {
-			messages = append(messages, c.Delta.Content)
-		}
-	}
-
-	return messages
-}
-
-func (or CompletionResponse) Err() error {
+func (or CompletionResponse) err() error {
 	if or.Error.Type == "" && or.Error.Message == "" {
 		return nil
 	}
 	return errors.New(fmt.Sprintf("%s: %s", or.Error.Type, or.Error.Message))
-}
-
-func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
-	request := new(CompletionRequest)
-
-	for _, o := range options {
-		err := o(request)
-		if err != nil {
-			return &CompletionRequest{}, err
-		}
-	}
-
-	if request.Model == "" {
-		return &CompletionRequest{}, errors.New("Missing model name.")
-	}
-	if m := request.Messages; m == nil || len(m) == 0 {
-		return &CompletionRequest{}, errors.New("Missing messages to send.")
-	}
-
-	return request, nil
 }
 
 func makeHTTPCompletionRequest(request *CompletionRequest, oc OpenaiClient) (*http.Response, error) {

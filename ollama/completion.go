@@ -46,37 +46,11 @@ type CompletionResponse struct {
 	StatusCode         int       `json:"status_code"`
 }
 
-func (or CompletionResponse) GetMessages() []string {
-	messages := []string{or.Message.Content}
-
-	return messages
-}
-
-func (or CompletionResponse) Err() error {
+func (or CompletionResponse) err() error {
 	if or.Error == "" {
 		return nil
 	}
 	return errors.New(or.Error)
-}
-
-func NewCompletionRequest(options ...completionOption) (*CompletionRequest, error) {
-	request := new(CompletionRequest)
-
-	for _, o := range options {
-		err := o(request)
-		if err != nil {
-			return &CompletionRequest{}, err
-		}
-	}
-
-	if request.Model == "" {
-		return &CompletionRequest{}, errors.New("Missing model name.")
-	}
-	if m := request.Messages; m == nil || len(m) == 0 {
-		return &CompletionRequest{}, errors.New("Missing messages to send.")
-	}
-
-	return request, nil
 }
 
 func makeHTTPCompletionRequest(request *CompletionRequest, oc OllamaClient) (*http.Response, error) {

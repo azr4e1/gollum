@@ -35,30 +35,12 @@ func NewClient(baseURL string) (OllamaClient, error) {
 	return OllamaClient{baseURL: baseURL, stream: false, Timeout: 30 * time.Second}, nil
 }
 
-func (oc *OllamaClient) DisableStream() {
-	oc.stream = false
-	oc.streamFunction = nil
-}
-
 func (oc *OllamaClient) EnableStream(function StreamingFunction) {
 	oc.stream = true
 	oc.streamFunction = function
 }
 
-func (oc OllamaClient) IsStreaming() bool {
-	return oc.stream
-}
-
-func (oc OllamaClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
-	request, err := NewCompletionRequest(options...)
-	if err != nil {
-		return *request, CompletionResponse{}, err
-	}
-
-	return oc.CompleteWithCustomRequest(request)
-}
-
-func (oc OllamaClient) CompleteWithCustomRequest(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
+func (oc OllamaClient) Complete(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
 	request.Stream = oc.stream
 
 	res, err := makeHTTPCompletionRequest(request, oc)
@@ -92,7 +74,7 @@ func (oc OllamaClient) readCompletionResponse(res *http.Response) (CompletionRes
 	// attach status code to response object
 	ollamaRes.StatusCode = res.StatusCode
 
-	return *ollamaRes, ollamaRes.Err()
+	return *ollamaRes, ollamaRes.err()
 }
 
 func (oc OllamaClient) readCompletionStreamResponse(res *http.Response) error {
@@ -152,5 +134,5 @@ func (oc OllamaClient) readCompletionStreamResponse(res *http.Response) error {
 	// attach status code to response object
 	ollamaRes.StatusCode = res.StatusCode
 
-	return ollamaRes.Err()
+	return ollamaRes.err()
 }

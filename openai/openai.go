@@ -36,30 +36,12 @@ func NewClient(apiKey string) (OpenaiClient, error) {
 	return OpenaiClient{apiKey: apiKey, Timeout: 30 * time.Second}, nil
 }
 
-func (oc *OpenaiClient) DisableStream() {
-	oc.stream = false
-	oc.streamFunction = nil
-}
-
 func (oc *OpenaiClient) EnableStream(function StreamingFunction) {
 	oc.stream = true
 	oc.streamFunction = function
 }
 
-func (oc OpenaiClient) IsStreaming() bool {
-	return oc.stream
-}
-
-func (oc OpenaiClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
-	request, err := NewCompletionRequest(options...)
-	if err != nil {
-		return *request, CompletionResponse{}, err
-	}
-
-	return oc.CompleteWithCustomRequest(request)
-}
-
-func (oc OpenaiClient) CompleteWithCustomRequest(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
+func (oc OpenaiClient) Complete(request *CompletionRequest) (CompletionRequest, CompletionResponse, error) {
 	request.Stream = oc.stream
 
 	res, err := makeHTTPCompletionRequest(request, oc)
@@ -93,7 +75,7 @@ func (oc OpenaiClient) readCompletionResponse(res *http.Response) (CompletionRes
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
 
-	return *openaiRes, openaiRes.Err()
+	return *openaiRes, openaiRes.err()
 }
 
 func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
@@ -153,18 +135,10 @@ func (oc OpenaiClient) readCompletionStreamResponse(res *http.Response) error {
 	// attach status code to response object
 	openaiRes.StatusCode = res.StatusCode
 
-	return openaiRes.Err()
+	return openaiRes.err()
 }
 
-func (oc OpenaiClient) TextToSpeech(opts ...ttsOption) (TTSRequest, TTSResponse, error) {
-	request, err := NewTTSRequest(opts...)
-	if err != nil {
-		return *request, TTSResponse{}, err
-	}
-	return oc.TTSWithCustomRequest(request)
-}
-
-func (oc OpenaiClient) TTSWithCustomRequest(request *TTSRequest) (TTSRequest, TTSResponse, error) {
+func (oc OpenaiClient) TextToSpeech(request *TTSRequest) (TTSRequest, TTSResponse, error) {
 	response := new(TTSResponse)
 
 	res, err := makeHTTPTTSRequest(request, oc)

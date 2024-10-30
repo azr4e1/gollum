@@ -171,7 +171,7 @@ func openaiComplete(request *CompletionRequest, c llmClient) (CompletionRequest,
 		}
 		openaiClient.EnableStream(streamFunc)
 	}
-	_, result, err := openaiClient.CompleteWithCustomRequest(&openaiReq)
+	_, result, err := openaiClient.Complete(&openaiReq)
 	if err != nil {
 		return *request, CompletionResponse{}, err
 	}
@@ -192,7 +192,7 @@ func ollamaComplete(request *CompletionRequest, c llmClient) (CompletionRequest,
 		}
 		ollamaClient.EnableStream(streamFunc)
 	}
-	_, result, err := ollamaClient.CompleteWithCustomRequest(&ollamaReq)
+	_, result, err := ollamaClient.Complete(&ollamaReq)
 	if err != nil {
 		return *request, CompletionResponse{}, err
 	}

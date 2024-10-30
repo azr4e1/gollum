@@ -40,7 +40,7 @@ func openaiTTS(request *TTSRequest, c llmClient) (TTSRequest, TTSResponse, error
 	if err != nil {
 		return *request, TTSResponse{}, err
 	}
-	_, result, err := openaiClient.TTSWithCustomRequest(&openaiReq)
+	_, result, err := openaiClient.TextToSpeech(&openaiReq)
 	if err != nil {
 		return *request, TTSResponse{}, err
 	}

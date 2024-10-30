@@ -65,28 +65,6 @@ type TTSError struct {
 	Type    string `json:"type"`
 }
 
-func NewTTSRequest(opts ...ttsOption) (*TTSRequest, error) {
-	request := new(TTSRequest)
-	for _, o := range opts {
-		err := o(request)
-		if err != nil {
-			return &TTSRequest{}, err
-		}
-	}
-
-	if request.Model == "" {
-		return &TTSRequest{}, errors.New("missing model.")
-	}
-	if request.Voice == "" {
-		return &TTSRequest{}, errors.New("missing voice.")
-	}
-	if request.Input == "" {
-		return &TTSRequest{}, errors.New("missing input.")
-	}
-
-	return request, nil
-}
-
 func makeHTTPTTSRequest(request *TTSRequest, oc OpenaiClient) (*http.Response, error) {
 	jsonRequest, err := json.Marshal(request)
 	if err != nil {
