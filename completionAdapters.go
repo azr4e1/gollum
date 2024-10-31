@@ -158,7 +158,7 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 	return converted
 }
 
-func openaiComplete(request *CompletionRequest, c llmClient) (CompletionRequest, CompletionResponse, error) {
+func openaiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest, CompletionResponse, error) {
 	openaiReq := request.ToOpenAI()
 	openaiClient, err := c.ToOpenAI()
 	if err != nil {
@@ -179,7 +179,7 @@ func openaiComplete(request *CompletionRequest, c llmClient) (CompletionRequest,
 	return *request, ResponseFromOpenAI(result), nil
 }
 
-func ollamaComplete(request *CompletionRequest, c llmClient) (CompletionRequest, CompletionResponse, error) {
+func ollamaComplete(request *CompletionRequest, c LLMClient) (CompletionRequest, CompletionResponse, error) {
 	ollamaReq := request.ToOllama()
 	ollamaClient, err := c.ToOllama()
 	if err != nil {

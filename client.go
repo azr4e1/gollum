@@ -14,7 +14,7 @@ const (
 
 type StreamingFunction func(CompletionResponse) error
 
-type llmClient struct {
+type LLMClient struct {
 	provider       llmProvider
 	apiKey         string
 	apiBase        string
@@ -23,41 +23,41 @@ type llmClient struct {
 	Timeout        time.Duration
 }
 
-func NewClient(options ...clientOption) (llmClient, error) {
-	client := new(llmClient)
+func NewClient(options ...clientOption) (LLMClient, error) {
+	client := new(LLMClient)
 	client.Timeout = 30 * time.Second
 	for _, o := range options {
 		err := o(client)
 		if err != nil {
-			return llmClient{}, err
+			return LLMClient{}, err
 		}
 	}
 
 	if client.provider == 0 {
-		return llmClient{}, errors.New("provider is empty.")
+		return LLMClient{}, errors.New("provider is empty.")
 	}
 	if client.apiKey == "" && client.apiBase == "" {
-		return llmClient{}, errors.New("must provide at least one of apiKey or apiBase")
+		return LLMClient{}, errors.New("must provide at least one of apiKey or apiBase")
 	}
 
 	return *client, nil
 }
 
-func (oc *llmClient) DisableStream() {
+func (oc *LLMClient) DisableStream() {
 	oc.stream = false
 	oc.streamFunction = nil
 }
 
-func (oc *llmClient) EnableStream(function StreamingFunction) {
+func (oc *LLMClient) EnableStream(function StreamingFunction) {
 	oc.stream = true
 	oc.streamFunction = function
 }
 
-func (oc llmClient) IsStreaming() bool {
+func (oc LLMClient) IsStreaming() bool {
 	return oc.stream
 }
 
-func (c llmClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
+func (c LLMClient) Complete(options ...completionOption) (CompletionRequest, CompletionResponse, error) {
 	request, err := NewCompletionRequest(options...)
 	if err != nil {
 		return *request, CompletionResponse{}, err
@@ -73,7 +73,7 @@ func (c llmClient) Complete(options ...completionOption) (CompletionRequest, Com
 	return *request, CompletionResponse{}, errors.New("completion not implemented for this provider.")
 }
 
-func (c llmClient) TextToSpeech(options ...speechOption) (TTSRequest, TTSResponse, error) {
+func (c LLMClient) TextToSpeech(options ...speechOption) (TTSRequest, TTSResponse, error) {
 	request, err := NewTTSRequest(options...)
 	if err != nil {
 		return *request, TTSResponse{}, err

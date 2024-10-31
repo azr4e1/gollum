@@ -34,7 +34,7 @@ func SpeechResponseFromOpenAI(response oai.TTSResponse) TTSResponse {
 	return ttsResponse
 }
 
-func openaiTTS(request *TTSRequest, c llmClient) (TTSRequest, TTSResponse, error) {
+func openaiTTS(request *TTSRequest, c LLMClient) (TTSRequest, TTSResponse, error) {
 	openaiReq := request.ToOpenAI()
 	openaiClient, err := c.ToOpenAI()
 	if err != nil {

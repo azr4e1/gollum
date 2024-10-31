@@ -6,19 +6,19 @@ import (
 	m "github.com/azr4e1/gollum/message"
 )
 
-type clientOption func(*llmClient) error
+type clientOption func(*LLMClient) error
 type completionOption func(*CompletionRequest) error
 type speechOption func(*TTSRequest) error
 
 func WithProvider(provider llmProvider) clientOption {
-	return func(lc *llmClient) error {
+	return func(lc *LLMClient) error {
 		lc.provider = provider
 
 		return nil
 	}
 }
 func WithAPIKey(apiKey string) clientOption {
-	return func(lc *llmClient) error {
+	return func(lc *LLMClient) error {
 		if apiKey == "" {
 			return errors.New("must provide API key.")
 		}
@@ -28,7 +28,7 @@ func WithAPIKey(apiKey string) clientOption {
 	}
 }
 func WithAPIBase(apiBase string) clientOption {
-	return func(lc *llmClient) error {
+	return func(lc *LLMClient) error {
 		lc.apiBase = apiBase
 
 		return nil
