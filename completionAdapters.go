@@ -8,15 +8,13 @@ import (
 	oai "github.com/azr4e1/gollum/openai"
 )
 
-const (
-	LLMFinishReason = "DONE"
-)
-
 func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 	messages := []m.Message{}
 	for _, mess := range cr.Messages {
 		messages = append(messages, m.Message{Role: mess.Role, Content: mess.Content})
 	}
+	// keep it simple stupid
+	completionChoice := 1
 	request := oai.CompletionRequest{
 		Model:               cr.Model,
 		Messages:            messages,
@@ -26,7 +24,7 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 		LogProbs:            cr.LogProbs,
 		TopLogProbs:         cr.TopLogProbs,
 		MaxCompletionTokens: cr.MaxCompletionTokens,
-		CompletionChoices:   cr.CompletionChoices,
+		CompletionChoices:   &completionChoice,
 		PresencePenalty:     cr.PresencePenalty,
 		Seed:                cr.Seed,
 		Stop:                cr.Stop,
@@ -76,25 +74,20 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		CompletionTokensDetails: response.Usage.CompletionTokensDetails,
 	}
 
-	choices := []CompletionChoice{}
-	for _, c := range response.Choices {
-		var message m.Message
+	message := m.Message{}
+	finishReason := false
+	if len(response.Choices) != 0 {
+		c := response.Choices[0]
 		if c.Message.Content != "" {
 			message = m.Message{Role: c.Message.Role, Content: c.Message.Content}
 		} else if c.Delta.Content != "" {
 			message = m.Message{Role: c.Delta.Role, Content: c.Delta.Content}
 		}
 
-		finishReason := ""
 		if c.FinishReason != "" {
-			finishReason = LLMFinishReason
+			finishReason = true
 		}
-		choice := CompletionChoice{
-			Index:        c.Index,
-			Message:      message,
-			FinishReason: finishReason,
-		}
-		choices = append(choices, choice)
+
 	}
 
 	var compErr CompletionError
@@ -109,7 +102,8 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		Object:     response.Object,
 		Created:    response.Created,
 		Model:      response.Model,
-		Choices:    choices,
+		Message:    message,
+		Done:       finishReason,
 		Usage:      usage,
 		Error:      compErr,
 		StatusCode: response.StatusCode,
@@ -125,20 +119,14 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 		TotalTokens:      response.PromptEvalCount + response.EvalCount,
 	}
 
-	choices := []CompletionChoice{}
-	var message m.Message
+	message := m.Message{}
+	var finishReason bool
 	if response.Message.Content != "" {
 		message = m.Message{Role: response.Message.Role, Content: response.Message.Content}
 	}
-	var finishReason string
 	if response.Done {
-		finishReason = LLMFinishReason
+		finishReason = true
 	}
-	choice := CompletionChoice{
-		Message:      message,
-		FinishReason: finishReason,
-	}
-	choices = append(choices, choice)
 
 	var compErr CompletionError
 	if response.Error != "" {
@@ -158,7 +146,8 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 	converted := CompletionResponse{
 		Created:    int(created.Unix()),
 		Model:      response.Model,
-		Choices:    choices,
+		Message:    message,
+		Done:       finishReason,
 		Usage:      usage,
 		Error:      compErr,
 		StatusCode: response.StatusCode,

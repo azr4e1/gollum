@@ -118,17 +118,6 @@ func WithMaxCompletionTokens(maxCompletionTokens int) completionOption {
 	}
 }
 
-func WithCompletionChoices(completionChoices int) completionOption {
-	return func(oR *CompletionRequest) error {
-		if completionChoices <= 0 {
-			return errors.New("Number of completion choices cannot be negative or zero.")
-		}
-		oR.CompletionChoices = &completionChoices
-
-		return nil
-	}
-}
-
 func WithPresencePenalty(presencePenalty float64) completionOption {
 	return func(oR *CompletionRequest) error {
 		if presencePenalty < -2.0 || presencePenalty > 2.0 {
