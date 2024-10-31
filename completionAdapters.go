@@ -8,6 +8,10 @@ import (
 	oai "github.com/azr4e1/gollum/openai"
 )
 
+const (
+	LLMFinishReason = "DONE"
+)
+
 func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 	messages := []m.Message{}
 	for _, mess := range cr.Messages {
@@ -80,10 +84,15 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		} else if c.Delta.Content != "" {
 			message = m.Message{Role: c.Delta.Role, Content: c.Delta.Content}
 		}
+
+		finishReason := ""
+		if c.FinishReason != "" {
+			finishReason = LLMFinishReason
+		}
 		choice := CompletionChoice{
 			Index:        c.Index,
 			Message:      message,
-			FinishReason: c.FinishReason,
+			FinishReason: finishReason,
 		}
 		choices = append(choices, choice)
 	}
@@ -123,7 +132,7 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 	}
 	var finishReason string
 	if response.Done {
-		finishReason = "done"
+		finishReason = LLMFinishReason
 	}
 	choice := CompletionChoice{
 		Message:      message,
