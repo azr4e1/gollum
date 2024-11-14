@@ -3,6 +3,7 @@ package gollum
 import (
 	"time"
 
+	gem "github.com/azr4e1/gollum/gemini"
 	m "github.com/azr4e1/gollum/message"
 	ll "github.com/azr4e1/gollum/ollama"
 	oai "github.com/azr4e1/gollum/openai"
@@ -42,6 +43,49 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 	return request
 }
 
+func (cr CompletionRequest) ToGemini() gem.CompletionRequest {
+	messDict := map[string]string{
+		"assistant": "model",
+		"system":    "system",
+		"user":      "user",
+	}
+	messages := []gem.Message{}
+	for _, mess := range cr.Messages {
+		part := [](map[string]string){
+			{"text": mess.Content()},
+		}
+		messages = append(messages, gem.Message{Role: messDict[mess.Role()], Part: part})
+	}
+	var system map[string](map[string]string)
+	if systemMessage := cr.System.Content(); systemMessage != "" {
+		system = map[string](map[string]string){
+			"parts": {"text": systemMessage},
+		}
+	}
+	request := gem.CompletionRequest{
+		Model:         cr.Model,
+		Messages:      messages,
+		SystemMessage: system,
+		Stream:        cr.Stream,
+		// FreqPenalty:         cr.FreqPenalty,
+		// LogitBias:           cr.LogitBias,
+		// LogProbs:            cr.LogProbs,
+		// TopLogProbs:         cr.TopLogProbs,
+		// MaxCompletionTokens: cr.MaxCompletionTokens,
+		// CompletionChoices:   &completionChoice,
+		// PresencePenalty:     cr.PresencePenalty,
+		// Seed:                cr.Seed,
+		// Stop:                cr.Stop,
+		// Temperature:         cr.Temperature,
+		// TopP:                cr.TopP,
+		// User:                cr.User,
+		Ctx: cr.Ctx,
+		// Tools:               []openaiTool,
+	}
+
+	return request
+}
+
 func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
 	messages := []ll.Message{}
 	if system := cr.System.Content(); system != "" {
@@ -72,6 +116,48 @@ func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
 	}
 
 	return request
+}
+
+func ResponseFromGemini(response gem.CompletionResponse) CompletionResponse {
+	usage := CompletionUsage{
+		PromptTokens:     response.Usage.PromptTokens,
+		CompletionTokens: response.Usage.CompletionTokens,
+		TotalTokens:      response.Usage.TotalTokens,
+	}
+
+	message := m.Message{}
+	finishReason := false
+	if len(response.Choices) != 0 {
+		c := response.Choices[0]
+		if content := c.Content.Part[0]["text"]; c.Content.Role == "user" {
+			message = m.UserMessage(content)
+		} else {
+			message = m.AssistantMessage(content)
+		}
+
+		if c.FinishReason != "" {
+			finishReason = true
+		}
+
+	}
+
+	var compErr CompletionError
+	if response.Error.Status != "" {
+		compErr = CompletionError{
+			Message: response.Error.Message,
+			Type:    response.Error.Status,
+		}
+	}
+	converted := CompletionResponse{
+		Model:      response.Model,
+		Message:    message,
+		Done:       finishReason,
+		Usage:      usage,
+		Error:      compErr,
+		StatusCode: response.StatusCode,
+	}
+
+	return converted
 }
 
 func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
@@ -108,7 +194,6 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		if c.FinishReason != "" {
 			finishReason = true
 		}
-
 	}
 
 	var compErr CompletionError
@@ -200,6 +285,27 @@ func openaiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest,
 	}
 
 	return *request, ResponseFromOpenAI(result), nil
+}
+
+func geminiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest, CompletionResponse, error) {
+	geminiReq := request.ToGemini()
+	geminiClient, err := c.ToGemini()
+	if err != nil {
+		return *request, CompletionResponse{}, err
+	}
+	if c.stream {
+		streamFunc := func(geminiRes gem.CompletionResponse) error {
+			res := ResponseFromGemini(geminiRes)
+			return c.streamFunction(res)
+		}
+		geminiClient.EnableStream(streamFunc)
+	}
+	_, result, err := geminiClient.Complete(&geminiReq)
+	if err != nil {
+		return *request, CompletionResponse{}, err
+	}
+
+	return *request, ResponseFromGemini(result), nil
 }
 
 func ollamaComplete(request *CompletionRequest, c LLMClient) (CompletionRequest, CompletionResponse, error) {

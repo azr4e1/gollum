@@ -10,6 +10,7 @@ type llmProvider int
 const (
 	OPENAI llmProvider = iota + 1
 	OLLAMA
+	GEMINI
 )
 
 type StreamingFunction func(CompletionResponse) error
@@ -66,6 +67,8 @@ func (c LLMClient) Complete(options ...completionOption) (CompletionRequest, Com
 	switch c.provider {
 	case OPENAI:
 		return openaiComplete(request, c)
+	case GEMINI:
+		return geminiComplete(request, c)
 	case OLLAMA:
 		return ollamaComplete(request, c)
 	}
