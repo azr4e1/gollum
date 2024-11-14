@@ -5,8 +5,9 @@ import (
 )
 
 type Chat struct {
-	messages []Message
-	limit    int
+	systemPrompt Message
+	messages     []Message
+	limit        int
 }
 
 func (c *Chat) SetLimit(limit int) error {
@@ -15,6 +16,14 @@ func (c *Chat) SetLimit(limit int) error {
 	}
 	c.limit = limit
 	return nil
+}
+
+func (c *Chat) SetSystemPrompt(message string) {
+	c.systemPrompt = Message{role: "system", content: message}
+}
+
+func (c *Chat) UnsetSystemPrompt() {
+	c.systemPrompt = Message{}
 }
 
 func NewChat(m ...Message) Chat {
@@ -29,10 +38,6 @@ func (c *Chat) Add(m ...Message) {
 	c.messages = append(c.messages, m...)
 	if c.limit > 0 && len(c.messages) > c.limit {
 		trimmedMess := c.messages[len(c.messages)-c.limit:]
-		sm := c.messages[0]
-		if sm.Role == System {
-			trimmedMess[0] = sm
-		}
 		c.messages = trimmedMess
 	}
 }
@@ -74,18 +79,8 @@ func (c *Chat) Len() int {
 	return len(c.messages)
 }
 
-func (c *Chat) SystemMessages() []Message {
-	messages := []Message{}
-	if c.messages == nil {
-		return messages
-	}
-	for _, m := range c.messages {
-		if m.Role == System {
-			messages = append(messages, m)
-		}
-	}
-
-	return messages
+func (c *Chat) SystemMessage() Message {
+	return c.systemPrompt
 }
 
 func (c *Chat) UserMessages() []Message {
@@ -94,7 +89,7 @@ func (c *Chat) UserMessages() []Message {
 		return messages
 	}
 	for _, m := range c.messages {
-		if m.Role == User {
+		if m.Role() == user {
 			messages = append(messages, m)
 		}
 	}
@@ -108,7 +103,7 @@ func (c *Chat) AssistantMessages() []Message {
 		return messages
 	}
 	for _, m := range c.messages {
-		if m.Role == Assistant {
+		if m.Role() == assistant {
 			messages = append(messages, m)
 		}
 	}

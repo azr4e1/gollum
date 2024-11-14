@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	m "github.com/azr4e1/gollum/message"
 	"net/http"
 )
 
 type CompletionRequest struct {
 	Model               string          `json:"model"`
-	Messages            []m.Message     `json:"messages"`
+	Messages            []Message       `json:"messages"`
 	Stream              bool            `json:"stream"`
 	Tools               []openaiTool    `json:"tools,omitempty"`
 	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
@@ -38,10 +37,10 @@ type CompletionUsage struct {
 }
 
 type CompletionChoice struct {
-	Index        int       `json:"index"`
-	Message      m.Message `json:"message,omitempty"`
-	Delta        m.Message `json:"delta,omitempty"`
-	FinishReason string    `json:"finish_reason"`
+	Index        int     `json:"index"`
+	Message      Message `json:"message,omitempty"`
+	Delta        Message `json:"delta,omitempty"`
+	FinishReason string  `json:"finish_reason"`
 }
 
 type CompletionError struct {

@@ -9,9 +9,13 @@ import (
 )
 
 func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
-	messages := []m.Message{}
+	messages := []oai.Message{}
+	if system := cr.System.Content(); system != "" {
+		systemMessage := oai.Message{Role: "system", Content: system}
+		messages = append(messages, systemMessage)
+	}
 	for _, mess := range cr.Messages {
-		messages = append(messages, m.Message{Role: mess.Role, Content: mess.Content})
+		messages = append(messages, oai.Message{Role: mess.Role(), Content: mess.Content()})
 	}
 	// keep it simple stupid
 	completionChoice := 1
@@ -39,9 +43,13 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 }
 
 func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
-	messages := []m.Message{}
+	messages := []ll.Message{}
+	if system := cr.System.Content(); system != "" {
+		systemMessage := ll.Message{Role: "system", Content: system}
+		messages = append(messages, systemMessage)
+	}
 	for _, mess := range cr.Messages {
-		messages = append(messages, m.Message{Role: mess.Role, Content: mess.Content})
+		messages = append(messages, ll.Message{Role: mess.Role(), Content: mess.Content()})
 	}
 	request := ll.CompletionRequest{
 		Model:    cr.Model,
@@ -78,10 +86,23 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 	finishReason := false
 	if len(response.Choices) != 0 {
 		c := response.Choices[0]
+		role := ""
+		content := ""
 		if c.Message.Content != "" {
-			message = m.Message{Role: c.Message.Role, Content: c.Message.Content}
+			role = c.Message.Role
+			content = c.Message.Content
 		} else if c.Delta.Content != "" {
-			message = m.Message{Role: c.Delta.Role, Content: c.Delta.Content}
+			role = c.Delta.Role
+			content = c.Delta.Content
+		}
+
+		if content != "" {
+			if role == "user" {
+				message = m.UserMessage(content)
+			} else {
+				message = m.AssistantMessage(content)
+			}
+
 		}
 
 		if c.FinishReason != "" {
@@ -121,8 +142,12 @@ func ResponseFromOllama(response ll.CompletionResponse) CompletionResponse {
 
 	message := m.Message{}
 	var finishReason bool
-	if response.Message.Content != "" {
-		message = m.Message{Role: response.Message.Role, Content: response.Message.Content}
+	if content := response.Message.Content; content != "" {
+		if response.Message.Role == "user" {
+			message = m.UserMessage(content)
+		} else {
+			message = m.AssistantMessage(content)
+		}
 	}
 	if response.Done {
 		finishReason = true

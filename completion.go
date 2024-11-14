@@ -9,6 +9,7 @@ import (
 
 type CompletionRequest struct {
 	Model               string
+	System              m.Message
 	Messages            []m.Message
 	Stream              bool
 	FreqPenalty         *float64
@@ -51,7 +52,7 @@ type CompletionResponse struct {
 }
 
 func (or CompletionResponse) Content() string {
-	return or.Message.Content
+	return or.Message.Content()
 }
 
 func (or CompletionResponse) Err() error {

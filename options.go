@@ -48,6 +48,7 @@ func WithChat(chat m.Chat) completionOption {
 		if chat.IsEmpty() {
 			return errors.New("Missing messages to send.")
 		}
+		oR.System = chat.SystemMessage()
 		oR.Messages = chat.History()
 
 		return nil

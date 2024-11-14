@@ -1,15 +1,27 @@
 package message
 
 const (
-	System    = "system"
-	Assistant = "assistant"
-	User      = "user"
+	system    = "system"
+	assistant = "assistant"
+	user      = "user"
 )
 
 type Message struct {
-	Role      string     `json:"role"`
-	Content   string     `json:"content"`
-	ToolCalls []toolCall `json:"tool_calls,omitempty"`
+	role      string
+	content   string
+	toolCalls []toolCall
+}
+
+func (m Message) Role() string {
+	return m.role
+}
+
+func (m Message) Content() string {
+	return m.content
+}
+
+func (m Message) Tools() []toolCall {
+	return m.toolCalls
 }
 
 type toolCall struct {
@@ -23,14 +35,10 @@ type toolCallFunc struct {
 	Arguments string `json:"arguments"`
 }
 
-func SystemMessage(content string) Message {
-	return Message{Role: System, Content: content}
-}
-
 func UserMessage(content string) Message {
-	return Message{Role: User, Content: content}
+	return Message{role: user, content: content}
 }
 
 func AssistantMessage(content string) Message {
-	return Message{Role: Assistant, Content: content}
+	return Message{role: assistant, content: content}
 }
