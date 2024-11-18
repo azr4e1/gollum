@@ -5,9 +5,9 @@ import (
 )
 
 type Chat struct {
-	systemPrompt Message
-	messages     []Message
-	limit        int
+	systemMessage Message
+	messages      []Message
+	limit         int
 }
 
 func (c *Chat) SetLimit(limit int) error {
@@ -18,12 +18,12 @@ func (c *Chat) SetLimit(limit int) error {
 	return nil
 }
 
-func (c *Chat) SetSystemPrompt(message string) {
-	c.systemPrompt = Message{role: "system", content: message}
+func (c *Chat) SetSystemMessage(message string) {
+	c.systemMessage = Message{role: "system", content: message}
 }
 
-func (c *Chat) UnsetSystemPrompt() {
-	c.systemPrompt = Message{}
+func (c *Chat) UnsetSystemMessage() {
+	c.systemMessage = Message{}
 }
 
 func NewChat(m ...Message) Chat {
@@ -80,7 +80,7 @@ func (c *Chat) Len() int {
 }
 
 func (c *Chat) SystemMessage() Message {
-	return c.systemPrompt
+	return c.systemMessage
 }
 
 func (c *Chat) UserMessages() []Message {
