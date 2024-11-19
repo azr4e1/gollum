@@ -15,6 +15,10 @@ func (c *Chat) SetLimit(limit int) error {
 		return errors.New("limit cannot be < 0.")
 	}
 	c.limit = limit
+	if c.limit > 0 && len(c.messages) > c.limit {
+		trimmedMess := c.messages[len(c.messages)-c.limit:]
+		c.messages = trimmedMess
+	}
 	return nil
 }
 
