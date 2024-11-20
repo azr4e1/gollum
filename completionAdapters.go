@@ -11,12 +11,12 @@ import (
 
 func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 	messages := []oai.Message{}
-	if system := cr.System.Content(); system != "" {
+	if system := cr.System.Content; system != "" {
 		systemMessage := oai.Message{Role: "system", Content: system}
 		messages = append(messages, systemMessage)
 	}
 	for _, mess := range cr.Messages {
-		messages = append(messages, oai.Message{Role: mess.Role(), Content: mess.Content()})
+		messages = append(messages, oai.Message{Role: mess.Role, Content: mess.Content})
 	}
 	// keep it simple stupid
 	completionChoice := 1
@@ -52,34 +52,42 @@ func (cr CompletionRequest) ToGemini() gem.CompletionRequest {
 	messages := []gem.Message{}
 	for _, mess := range cr.Messages {
 		part := [](map[string]string){
-			{"text": mess.Content()},
+			{"text": mess.Content},
 		}
-		messages = append(messages, gem.Message{Role: messDict[mess.Role()], Part: part})
+		messages = append(messages, gem.Message{Role: messDict[mess.Role], Part: part})
 	}
 	var system map[string](map[string]string)
-	if systemMessage := cr.System.Content(); systemMessage != "" {
+	if systemMessage := cr.System.Content; systemMessage != "" {
 		system = map[string](map[string]string){
 			"parts": {"text": systemMessage},
 		}
 	}
+
+	var config map[string]any
+	configOptions := map[string]any{
+		"stopSequences":   cr.Stop,
+		"temperature":     cr.Temperature,
+		"maxOutputTokens": cr.MaxCompletionTokens,
+		"topP":            cr.TopP,
+		"topK":            cr.TopK,
+	}
+	for opt, val := range configOptions {
+		if val != nil {
+			if config == nil {
+				config = make(map[string]any)
+			}
+
+			config[opt] = val
+		}
+	}
+
 	request := gem.CompletionRequest{
 		Model:         cr.Model,
 		Messages:      messages,
 		SystemMessage: system,
 		Stream:        cr.Stream,
-		// FreqPenalty:         cr.FreqPenalty,
-		// LogitBias:           cr.LogitBias,
-		// LogProbs:            cr.LogProbs,
-		// TopLogProbs:         cr.TopLogProbs,
-		// MaxCompletionTokens: cr.MaxCompletionTokens,
-		// CompletionChoices:   &completionChoice,
-		// PresencePenalty:     cr.PresencePenalty,
-		// Seed:                cr.Seed,
-		// Stop:                cr.Stop,
-		// Temperature:         cr.Temperature,
-		// TopP:                cr.TopP,
-		// User:                cr.User,
-		Ctx: cr.Ctx,
+		Config:        config,
+		Ctx:           cr.Ctx,
 		// Tools:               []openaiTool,
 	}
 
@@ -88,12 +96,12 @@ func (cr CompletionRequest) ToGemini() gem.CompletionRequest {
 
 func (cr CompletionRequest) ToOllama() ll.CompletionRequest {
 	messages := []ll.Message{}
-	if system := cr.System.Content(); system != "" {
+	if system := cr.System.Content; system != "" {
 		systemMessage := ll.Message{Role: "system", Content: system}
 		messages = append(messages, systemMessage)
 	}
 	for _, mess := range cr.Messages {
-		messages = append(messages, ll.Message{Role: mess.Role(), Content: mess.Content()})
+		messages = append(messages, ll.Message{Role: mess.Role, Content: mess.Content})
 	}
 	request := ll.CompletionRequest{
 		Model:    cr.Model,

@@ -7,21 +7,9 @@ const (
 )
 
 type Message struct {
-	role      string
-	content   string
-	toolCalls []toolCall
-}
-
-func (m Message) Role() string {
-	return m.role
-}
-
-func (m Message) Content() string {
-	return m.content
-}
-
-func (m Message) Tools() []toolCall {
-	return m.toolCalls
+	Role      string
+	Content   string
+	ToolCalls []toolCall
 }
 
 type toolCall struct {
@@ -36,9 +24,9 @@ type toolCallFunc struct {
 }
 
 func UserMessage(content string) Message {
-	return Message{role: user, content: content}
+	return Message{Role: user, Content: content}
 }
 
 func AssistantMessage(content string) Message {
-	return Message{role: assistant, content: content}
+	return Message{Role: assistant, Content: content}
 }

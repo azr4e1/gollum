@@ -52,7 +52,7 @@ type CompletionResponse struct {
 }
 
 func (or CompletionResponse) Content() string {
-	return or.Message.Content()
+	return or.Message.Content
 }
 
 func (or CompletionResponse) Err() error {

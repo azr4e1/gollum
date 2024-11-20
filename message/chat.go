@@ -23,7 +23,7 @@ func (c *Chat) SetLimit(limit int) error {
 }
 
 func (c *Chat) SetSystemMessage(message string) {
-	c.systemMessage = Message{role: "system", content: message}
+	c.systemMessage = Message{Role: "system", Content: message}
 }
 
 func (c *Chat) UnsetSystemMessage() {
@@ -93,7 +93,7 @@ func (c *Chat) UserMessages() []Message {
 		return messages
 	}
 	for _, m := range c.messages {
-		if m.Role() == user {
+		if m.Role == user {
 			messages = append(messages, m)
 		}
 	}
@@ -107,7 +107,7 @@ func (c *Chat) AssistantMessages() []Message {
 		return messages
 	}
 	for _, m := range c.messages {
-		if m.Role() == assistant {
+		if m.Role == assistant {
 			messages = append(messages, m)
 		}
 	}
