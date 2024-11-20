@@ -18,7 +18,7 @@ type CompletionRequest struct {
 	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
 	LogProbs            *bool           `json:"logprobs,omitempty"`
 	TopLogProbs         *int            `json:"top_logprobs,omitempty"`
-	MaxCompletionTokens *int            `json:"max_completion_tokens,omitempty"`
+	MaxCompletionTokens *int            `json:"max_tokens,omitempty"`
 	CompletionChoices   *int            `json:"n,omitempty"`
 	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
 	Seed                *int            `json:"seed,omitempty"`
