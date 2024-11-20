@@ -20,6 +20,7 @@ type CompletionRequest struct {
 	Messages      []Message                      `json:"contents"`
 	SystemMessage map[string](map[string]string) `json:"system_instruction,omitempty"`
 	Stream        bool                           `json:"-"`
+	Config        map[string]any                 `json:"generationConfig,omitempty"`
 	// Tools               []openaiTool    `json:"tools,omitempty"`
 	// FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
 	// LogitBias           map[int]int     `json:"logit_bias,omitempty"`

@@ -168,6 +168,17 @@ func WithTopP(topP float64) completionOption {
 	}
 }
 
+func WithTopK(topK int) completionOption {
+	return func(oR *CompletionRequest) error {
+		if topK < 0 {
+			return errors.New("Top K must be between greater than 0.")
+		}
+		oR.TopK = &topK
+
+		return nil
+	}
+}
+
 func WithUser(user string) completionOption {
 	return func(oR *CompletionRequest) error {
 		if user == "" {

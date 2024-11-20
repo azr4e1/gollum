@@ -22,6 +22,7 @@ type CompletionRequest struct {
 	Stop                []string
 	Temperature         *float64
 	TopP                *float64
+	TopK                *int
 	User                string
 	Ctx                 context.Context
 	// Tools               []openaiTool
