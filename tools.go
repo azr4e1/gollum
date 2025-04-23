@@ -84,8 +84,12 @@ func GenerateArguments[T any]() []ToolArgument {
 	}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		name := field.Name
+		name := field.Tag.Get("json")
+		if name == "" {
+			name = field.Name
+		}
 		description := field.Tag.Get("jsonschema_description")
+
 		var jsonType jsonTypes
 		switch field.Type.Kind() {
 		case reflect.Bool:
