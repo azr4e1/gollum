@@ -1,6 +1,7 @@
 package gollum
 
 import (
+	"encoding/json"
 	"time"
 
 	gem "github.com/azr4e1/gollum/gemini"
@@ -219,7 +220,7 @@ func ResponseFromOpenAI(response oai.CompletionResponse, streaming bool) Complet
 					Type: otc.Type,
 					Function: m.ToolCallFunc{
 						Name:      otc.Function.Name,
-						Arguments: otc.Function.Arguments,
+						Arguments: json.RawMessage(otc.Function.Arguments),
 					},
 				}
 				toolCalls = append(toolCalls, tc)
