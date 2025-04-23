@@ -173,7 +173,7 @@ func ResponseFromGemini(response gem.CompletionResponse) CompletionResponse {
 	return converted
 }
 
-func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
+func ResponseFromOpenAI(response oai.CompletionResponse, streaming bool) CompletionResponse {
 	usage := CompletionUsage{
 		PromptTokens:            response.Usage.PromptTokens,
 		CompletionTokens:        response.Usage.CompletionTokens,
@@ -189,13 +189,14 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		role := ""
 		content := ""
 		var oaiToolCalls []oai.ToolCall
-		if c.Message.Content != "" {
-			role = c.Message.Role
-			content = c.Message.Content
-			oaiToolCalls = c.Message.ToolCalls
-		} else if c.Delta.Content != "" {
+		if streaming {
 			role = c.Delta.Role
 			content = c.Delta.Content
+			oaiToolCalls = c.Delta.ToolCalls
+
+		} else {
+			role = c.Message.Role
+			content = c.Message.Content
 			oaiToolCalls = c.Message.ToolCalls
 		}
 
@@ -311,7 +312,7 @@ func openaiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest,
 	}
 	if c.stream {
 		streamFunc := func(openaiRes oai.CompletionResponse) error {
-			res := ResponseFromOpenAI(openaiRes)
+			res := ResponseFromOpenAI(openaiRes, c.stream)
 			return c.streamFunction(res)
 		}
 		openaiClient.EnableStream(streamFunc)
@@ -321,7 +322,7 @@ func openaiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest,
 		return *request, CompletionResponse{}, err
 	}
 
-	return *request, ResponseFromOpenAI(result), nil
+	return *request, ResponseFromOpenAI(result, c.stream), nil
 }
 
 func geminiComplete(request *CompletionRequest, c LLMClient) (CompletionRequest, CompletionResponse, error) {

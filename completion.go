@@ -8,57 +8,57 @@ import (
 	m "github.com/azr4e1/gollum/message"
 )
 
-type CompletionType int
+type CompletionType string
 
 const (
-	Text CompletionType = iota
-	ToolCall
+	Text     CompletionType = "text"
+	ToolCall CompletionType = "tool"
 )
 
 type CompletionRequest struct {
-	Model               string
-	System              m.Message
-	Messages            []m.Message
-	Tools               []Tool
-	Stream              bool
-	FreqPenalty         *float64
-	LogitBias           map[int]int
-	LogProbs            *bool
-	TopLogProbs         *int
-	MaxCompletionTokens *int
-	PresencePenalty     *float64
-	Seed                *int
-	Stop                []string
-	Temperature         *float64
-	TopP                *float64
-	TopK                *int
-	User                string
-	Ctx                 context.Context
+	Model               string          `json:"model"`
+	System              m.Message       `json:"system_message"`
+	Messages            []m.Message     `json:"messages"`
+	Tools               []Tool          `json:"tools,omitempty"`
+	Stream              bool            `json:"stream"`
+	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
+	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
+	LogProbs            *bool           `json:"logprobs,omitempty"`
+	TopLogProbs         *int            `json:"top_logprobs,omitempty"`
+	MaxCompletionTokens *int            `json:"max_tokens,omitempty"`
+	PresencePenalty     *float64        `json:"presence_penalty,omitempty"`
+	Seed                *int            `json:"seed,omitempty"`
+	Stop                []string        `json:"stop,omitempty"`
+	Temperature         *float64        `json:"temperature,omitempty"`
+	TopP                *float64        `json:"top_p,omitempty"`
+	TopK                *int            `json:"top_k,omitempty"`
+	User                string          `json:"user,omitempty"`
+	Ctx                 context.Context `json:"-"`
 }
 
 type CompletionUsage struct {
-	PromptTokens            int
-	CompletionTokens        int
-	TotalTokens             int
-	CompletionTokensDetails map[string]any
+	PromptTokens            int            `json:"prompt_tokens"`
+	CompletionTokens        int            `json:"completion_tokens"`
+	TotalTokens             int            `json:"total_tokens"`
+	CompletionTokensDetails map[string]any `json:"completion_tokens_details"`
 }
 
 type CompletionError struct {
-	Message string
-	Type    string
+	Message string `json:"message"`
+	Type    string `json:"type"`
 }
 
 type CompletionResponse struct {
-	Id         string
-	Object     string
-	Created    int
-	Model      string
-	Type       CompletionType
-	Message    m.Message
-	Done       bool
-	Usage      CompletionUsage
-	Error      CompletionError
-	StatusCode int
+	Id         string          `json:"id"`
+	Object     string          `json:"object"`
+	Created    int             `json:"created"`
+	Model      string          `json:"model"`
+	Type       CompletionType  `json:"type"`
+	Message    m.Message       `json:"message"`
+	Done       bool            `json:"done"`
+	Usage      CompletionUsage `json:"usage"`
+	Error      CompletionError `json:"error,omitempty"`
+	StatusCode int             `json:"status_code"`
 }
 
 func (or CompletionResponse) Content() string {
