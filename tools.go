@@ -1,7 +1,6 @@
 package gollum
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -117,4 +116,12 @@ func GenerateArguments[T any]() []ToolArgument {
 	}
 
 	return args
+}
+
+func (t Tool) Name() string {
+	return t.Function.Name
+}
+
+func (t Tool) Description() string {
+	return t.Function.Description
 }
