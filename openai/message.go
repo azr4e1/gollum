@@ -1,5 +1,7 @@
 package openai
 
+import "encoding/json"
+
 type Message struct {
 	Role      string     `json:"role"`
 	Content   string     `json:"content"`
@@ -13,6 +15,6 @@ type ToolCall struct {
 }
 
 type toolCallFunc struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
 }

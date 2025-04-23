@@ -1,5 +1,7 @@
 package message
 
+import "encoding/json"
+
 const (
 	system    = "system"
 	assistant = "assistant"
@@ -19,8 +21,8 @@ type ToolCall struct {
 }
 
 type ToolCallFunc struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
 }
 
 func UserMessage(content string) Message {

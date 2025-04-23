@@ -69,6 +69,13 @@ func (or CompletionResponse) Tools() []m.ToolCall {
 	return or.Message.ToolCalls
 }
 
+func (or CompletionResponse) Tool() (m.ToolCall, error) {
+	if tools := or.Tools(); tools != nil && len(tools) > 0 {
+		return tools[0], nil
+	}
+	return m.ToolCall{}, errors.New("No tools available.")
+}
+
 func (or CompletionResponse) Err() error {
 	if or.Error.Type == "" && or.Error.Message == "" {
 		return nil
