@@ -9,16 +9,16 @@ const (
 type Message struct {
 	Role      string
 	Content   string
-	ToolCalls []toolCall
+	ToolCalls []ToolCall
 }
 
-type toolCall struct {
+type ToolCall struct {
 	Id       string       `json:"id"`
 	Type     string       `json:"type"`
-	Function toolCallFunc `json:"function"`
+	Function ToolCallFunc `json:"function"`
 }
 
-type toolCallFunc struct {
+type ToolCallFunc struct {
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 }

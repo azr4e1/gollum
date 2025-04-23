@@ -1,18 +1,18 @@
-package openai
+package gollum
 
-type JsonTypes string
+type jsonTypes string
 
 const (
-	JSONObject  JsonTypes = "object"
-	JSONString  JsonTypes = "string"
-	JSONNumber  JsonTypes = "number"
-	JSONInteger JsonTypes = "integer"
-	JSONArray   JsonTypes = "array"
-	JSONBoolean JsonTypes = "boolean"
-	JSONNull    JsonTypes = "null"
+	JSONObject  jsonTypes = "object"
+	JSONString  jsonTypes = "string"
+	JSONNumber  jsonTypes = "number"
+	JSONInteger jsonTypes = "integer"
+	JSONArray   jsonTypes = "array"
+	JSONBoolean jsonTypes = "boolean"
+	JSONNull    jsonTypes = "null"
 )
 
-type OpenaiTool struct {
+type Tool struct {
 	Type     string       `json:"type"`
 	Function functionTool `json:"function"`
 }
@@ -30,19 +30,19 @@ type functionParameter struct {
 }
 
 type functionArgument struct {
-	Type        JsonTypes `json:"type"`
+	Type        jsonTypes `json:"type"`
 	Description string    `json:"description,omitempty"`
 	Enum        []string  `json:"enum,omitempty"`
 }
 
 type ToolArgument struct {
 	Name        string
-	Type        JsonTypes
+	Type        jsonTypes
 	Description string
 	Enum        []string
 }
 
-func NewTool(name, description string, args []ToolArgument, required []string) OpenaiTool {
+func NewTool(name, description string, args []ToolArgument, required []string) Tool {
 	properties := make(map[string]functionArgument)
 	for _, arg := range args {
 		properties[arg.Name] = functionArgument{
@@ -62,7 +62,7 @@ func NewTool(name, description string, args []ToolArgument, required []string) O
 		Parameters:  parameters,
 	}
 
-	tool := OpenaiTool{
+	tool := Tool{
 		Type:     "function",
 		Function: function,
 	}

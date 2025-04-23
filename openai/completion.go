@@ -13,7 +13,7 @@ type CompletionRequest struct {
 	Model               string          `json:"model"`
 	Messages            []Message       `json:"messages"`
 	Stream              bool            `json:"stream"`
-	Tools               []openaiTool    `json:"tools,omitempty"`
+	Tools               []OpenaiTool    `json:"tools,omitempty"`
 	FreqPenalty         *float64        `json:"frequency_penalty,omitempty"`
 	LogitBias           map[int]int     `json:"logit_bias,omitempty"`
 	LogProbs            *bool           `json:"logprobs,omitempty"`

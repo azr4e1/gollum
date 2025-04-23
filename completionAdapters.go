@@ -18,11 +18,17 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 	for _, mess := range cr.Messages {
 		messages = append(messages, oai.Message{Role: mess.Role, Content: mess.Content})
 	}
+	tools := []oai.OpenaiTool{}
+	for _, t := range cr.Tools {
+		openaiT := t.ToOpenai()
+		tools = append(tools, openaiT)
+	}
 	// keep it simple stupid
 	completionChoice := 1
 	request := oai.CompletionRequest{
 		Model:               cr.Model,
 		Messages:            messages,
+		Tools:               tools,
 		Stream:              cr.Stream,
 		FreqPenalty:         cr.FreqPenalty,
 		LogitBias:           cr.LogitBias,
@@ -37,7 +43,6 @@ func (cr CompletionRequest) ToOpenAI() oai.CompletionRequest {
 		TopP:                cr.TopP,
 		User:                cr.User,
 		Ctx:                 cr.Ctx,
-		// Tools:               []openaiTool,
 	}
 
 	return request
@@ -178,16 +183,20 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 
 	message := m.Message{}
 	finishReason := false
+	completionType := Text
 	if len(response.Choices) != 0 {
 		c := response.Choices[0]
 		role := ""
 		content := ""
+		var oaiToolCalls []oai.ToolCall
 		if c.Message.Content != "" {
 			role = c.Message.Role
 			content = c.Message.Content
+			oaiToolCalls = c.Message.ToolCalls
 		} else if c.Delta.Content != "" {
 			role = c.Delta.Role
 			content = c.Delta.Content
+			oaiToolCalls = c.Message.ToolCalls
 		}
 
 		if content != "" {
@@ -196,7 +205,26 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 			} else {
 				message = m.AssistantMessage(content)
 			}
-
+		} else if oaiToolCalls != nil && len(oaiToolCalls) > 0 {
+			if role == "user" {
+				message = m.UserMessage("")
+			} else {
+				message = m.AssistantMessage("")
+			}
+			toolCalls := []m.ToolCall{}
+			for _, otc := range oaiToolCalls {
+				tc := m.ToolCall{
+					Id:   otc.Id,
+					Type: otc.Type,
+					Function: m.ToolCallFunc{
+						Name:      otc.Function.Name,
+						Arguments: otc.Function.Arguments,
+					},
+				}
+				toolCalls = append(toolCalls, tc)
+			}
+			message.ToolCalls = toolCalls
+			completionType = ToolCall
 		}
 
 		if c.FinishReason != "" {
@@ -221,6 +249,7 @@ func ResponseFromOpenAI(response oai.CompletionResponse) CompletionResponse {
 		Usage:      usage,
 		Error:      compErr,
 		StatusCode: response.StatusCode,
+		Type:       completionType,
 	}
 
 	return converted

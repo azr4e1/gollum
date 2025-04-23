@@ -4,13 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	m "github.com/azr4e1/gollum/message"
+)
+
+type CompletionType int
+
+const (
+	Text CompletionType = iota
+	ToolCall
 )
 
 type CompletionRequest struct {
 	Model               string
 	System              m.Message
 	Messages            []m.Message
+	Tools               []Tool
 	Stream              bool
 	FreqPenalty         *float64
 	LogitBias           map[int]int
@@ -25,7 +34,6 @@ type CompletionRequest struct {
 	TopK                *int
 	User                string
 	Ctx                 context.Context
-	// Tools               []openaiTool
 }
 
 type CompletionUsage struct {
@@ -45,6 +53,7 @@ type CompletionResponse struct {
 	Object     string
 	Created    int
 	Model      string
+	Type       CompletionType
 	Message    m.Message
 	Done       bool
 	Usage      CompletionUsage
@@ -54,6 +63,10 @@ type CompletionResponse struct {
 
 func (or CompletionResponse) Content() string {
 	return or.Message.Content
+}
+
+func (or CompletionResponse) Tools() []m.ToolCall {
+	return or.Message.ToolCalls
 }
 
 func (or CompletionResponse) Err() error {

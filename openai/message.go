@@ -3,10 +3,10 @@ package openai
 type Message struct {
 	Role      string     `json:"role"`
 	Content   string     `json:"content"`
-	ToolCalls []toolCall `json:"tool_calls,omitempty"`
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
-type toolCall struct {
+type ToolCall struct {
 	Id       string       `json:"id"`
 	Type     string       `json:"type"`
 	Function toolCallFunc `json:"function"`
