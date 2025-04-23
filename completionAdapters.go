@@ -216,12 +216,10 @@ func ResponseFromOpenAI(response oai.CompletionResponse, streaming bool) Complet
 			toolCalls := []m.ToolCall{}
 			for _, otc := range oaiToolCalls {
 				tc := m.ToolCall{
-					Id:   otc.Id,
-					Type: otc.Type,
-					Function: m.ToolCallFunc{
-						Name:      otc.Function.Name,
-						Arguments: json.RawMessage(otc.Function.Arguments),
-					},
+					Id:        otc.Id,
+					Type:      otc.Type,
+					Name:      otc.Function.Name,
+					Arguments: json.RawMessage(otc.Function.Arguments),
 				}
 				toolCalls = append(toolCalls, tc)
 			}

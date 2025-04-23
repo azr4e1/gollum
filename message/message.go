@@ -15,12 +15,8 @@ type Message struct {
 }
 
 type ToolCall struct {
-	Id       string       `json:"id"`
-	Type     string       `json:"type"`
-	Function ToolCallFunc `json:"function"`
-}
-
-type ToolCallFunc struct {
+	Id        string          `json:"id"`
+	Type      string          `json:"type"`
 	Name      string          `json:"name"`
 	Arguments json.RawMessage `json:"arguments"`
 }
