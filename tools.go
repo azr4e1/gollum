@@ -1,5 +1,10 @@
 package gollum
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type jsonTypes string
 
 const (
@@ -68,4 +73,44 @@ func NewTool(name, description string, args []ToolArgument, required []string) T
 	}
 
 	return tool
+}
+
+func GenerateArguments[T any]() []ToolArgument {
+	args := []ToolArgument{}
+
+	t := reflect.TypeFor[T]()
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		name := field.Name
+		description := field.Tag.Get("jsonschema_description")
+		var jsonType jsonTypes
+		switch field.Type.Kind() {
+		case reflect.Bool:
+			jsonType = JSONBoolean
+		case reflect.Int | reflect.Int8 | reflect.Int16 | reflect.Int32 | reflect.Int64 | reflect.Uint | reflect.Uint8 | reflect.Uint16 | reflect.Uint32 | reflect.Uint64 | reflect.Uintptr:
+			jsonType = JSONInteger
+		case reflect.Float64:
+			jsonType = JSONNumber
+		case reflect.Array | reflect.Slice:
+			jsonType = JSONArray
+		case reflect.String:
+			jsonType = JSONString
+		case reflect.Struct:
+			jsonType = JSONObject
+		default:
+			jsonType = JSONNull
+		}
+
+		arg := ToolArgument{
+			Name:        name,
+			Description: description,
+			Type:        jsonType,
+		}
+		args = append(args, arg)
+	}
+
+	return args
 }
