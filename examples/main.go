@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -15,6 +17,8 @@ import (
 	// "github.com/joho/godotenv"
 )
 
+const Keyword = "***CONTINUE***"
+
 // var resMess string
 
 func main() {
@@ -23,34 +27,21 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	key := os.Getenv("OPENAI_API_KEY")
-	client, _ := gollum.NewClient(gollum.WithAPIKey(key), gollum.WithProvider(gollum.OPENAI))
+	client, err := gollum.NewClient(gollum.WithAPIKey(key), gollum.WithProvider(gollum.OPENAI))
+	if err != nil {
+		panic(err)
+	}
 	// client.EnableStream(streamingFunc)
 	// client.Timeout = time.Second * 40
 
 	chat := message.NewChat()
-	chat.SetSystemMessage("You are a Yakuza member. Act like it! Feel free to take the lead and ask the user what they want only when necessary. When you are finished reasoning or talking and you want the user to prompt you with something, terminate your sentence with this word: DONE!!!")
+	chat.SetSystemMessage("You are a helpful assistant that always thinks step by step. Think step by step and don't ask for user input or confirmation until you have completely satisfied the user's request. Feel free to take the lead and ask the user what they want only when necessary. If you need more turns to completely answer the user question, end your turn with the keyword ***CONTINUE***")
 	tools := map[string]func(json.RawMessage) (string, error){
-		ReadFileSchema.Name():  ReadFile,
-		ListFilesSchema.Name(): ListFiles,
-		EditFileSchema.Name():  EditFile,
+		ReadFileSchema.Name():      ReadFile,
+		ListFilesSchema.Name():     ListFiles,
+		EditFileSchema.Name():      EditFile,
+		ExecuteScriptSchema.Name(): ExecuteScript,
 	}
-	// chat.Add(message.UserMessage("read the content of the file `secret-file.txt`"))
-	// req, res, _ := client.Complete(gollum.WithChat(chat), gollum.WithModel("gpt-4o"), gollum.WithTool(ReadFileSchema))
-	// v, _ := json.MarshalIndent(req, "", "  ")
-	// fmt.Println(string(v))
-	// v, _ = json.MarshalIndent(res, "", "  ")
-	// fmt.Println(string(v))
-	// t, _ := res.Tool()
-	// fmt.Println(t)
-
-	// args := t.Arguments
-	// // print(string(args))
-	// readFileInput := ReadFileInput{}
-	// err = json.Unmarshal(args, &readFileInput)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(readFileInput)
 
 	userInput := true
 	for {
@@ -62,24 +53,24 @@ func main() {
 			}
 			chat.Add(message.UserMessage(input))
 		}
-		_, res, err := client.Complete(gollum.WithChat(chat), gollum.WithModel("gpt-4o"), gollum.WithTool(ReadFileSchema, ListFilesSchema, EditFileSchema))
+		_, res, err := client.Complete(gollum.WithChat(chat), gollum.WithModel("gpt-4o"), gollum.WithTool(ReadFileSchema, ListFilesSchema, EditFileSchema, ExecuteScriptSchema))
 		if err != nil {
 			log.Fatal(err)
 		}
 		switch res.Type {
 		case gollum.Text:
 			resMess := strings.TrimSpace(res.Content())
-			if strings.ToUpper(resMess[len(resMess)-7:]) == "DONE!!!" {
-				userInput = true
+			if strings.ToUpper(resMess[len(resMess)-len(Keyword):]) == Keyword {
+				userInput = false
 				fmt.Printf("\u001b[93mBot\u001b[0m: ")
-				fmt.Println(resMess[:len(resMess)-7])
-				chat.Add(message.AssistantMessage(resMess[:len(resMess)-7]))
+				fmt.Println(resMess)
+				chat.Add(message.AssistantMessage(resMess[:len(resMess)-len(Keyword)]))
 				continue
 			}
 			fmt.Printf("\u001b[93mBot\u001b[0m: ")
 			fmt.Println(resMess)
 			chat.Add(message.AssistantMessage(resMess))
-			userInput = false
+			userInput = true
 		case gollum.ToolCall:
 			t, err := res.Tool()
 			fmt.Printf("System: using tool: '%s'\n", t.Name)
@@ -127,9 +118,20 @@ type EditFileInput struct {
 	NewStr string `json:"new_str" jsonschema_description:"Text to replace old_str with"`
 }
 
+type ExecuteScriptInput struct {
+	Executable string `json:"executable" jsonschema_description:"The name of the executable that runs the script, e.g. 'python'"`
+	Path       string `json:"path" jsonschema_description:"The path to the script"`
+}
+
 type ListFilesInput struct {
 	Path string `json:"path,omitempty" jsonschema_description:"Optional relative path to list files from. Defaults to current directory if not provided."`
 }
+
+var ExecuteScriptSchema = gollum.NewTool("execute_script",
+	"Execute a script with the given executable and script path",
+	gollum.GenerateArguments[ExecuteScriptInput](),
+	nil,
+)
 
 var ListFilesSchema = gollum.NewTool("list_files",
 	"List files and directories at a given path. If no path is provided, lists files in the current directory.",
@@ -261,4 +263,25 @@ func createNewFile(filePath, content string) (string, error) {
 	}
 
 	return fmt.Sprintf("Successfully created file %s", filePath), nil
+}
+
+func ExecuteScript(input json.RawMessage) (string, error) {
+	executeScriptInput := ExecuteScriptInput{}
+	err := json.Unmarshal(input, &executeScriptInput)
+	if err != nil {
+		return "", err
+	}
+
+	if executeScriptInput.Executable == "" || executeScriptInput.Path == "" {
+		return "", errors.New("invalid input parameters")
+	}
+	executable := executeScriptInput.Executable
+	filePath := executeScriptInput.Path
+
+	cmd := exec.Command(executable, filePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }
