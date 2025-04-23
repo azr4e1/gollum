@@ -198,13 +198,13 @@ func WithContext(ctx context.Context) completionOption {
 	}
 }
 
-// func WithTool(tools ...openaiTool) completionOption {
-// 	return func(oR *completionRequest) error {
-// 		oR.Tools = tools
+func WithTool(tools ...Tool) completionOption {
+	return func(oR *CompletionRequest) error {
+		oR.Tools = tools
 
-// 		return nil
-// 	}
-// }
+		return nil
+	}
+}
 
 func WithTTSModel(model string) speechOption {
 	return func(aR *TTSRequest) error {
