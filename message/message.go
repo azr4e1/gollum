@@ -9,9 +9,9 @@ const (
 )
 
 type Message struct {
-	Role      string
-	Content   string
-	ToolCalls []ToolCall
+	Role      string     `json:"role"`
+	Content   string     `json:"content"`
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 type ToolCall struct {
